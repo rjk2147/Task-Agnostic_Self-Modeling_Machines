@@ -1,4 +1,4 @@
-import time, datetime
+import time, datetime, math
 from collections import deque
 import logger
 import numpy as np
@@ -106,7 +106,7 @@ def __rec_next_move__(action, depth, search_prec, new_top, new_bottom, env, env_
     return min_act, tmp_min_d
     # else: return __rec_next_move__(action, depth+1, search_prec, new_top, new_bottom, env, env_learner, max_action, dof, min_d, obs, episode_step, test)
 
-def test(env, epochs=100, train_episodes=10, test_episodes=100):
+def test(env, epochs=100, train_episodes=10, test_episodes=100, loop='open', show_model=False):
     assert (np.abs(env.action_space.low) == env.action_space.high).all()  # we assume symmetric actions.
     max_action = env.action_space.high
     logger.info('scaling actions by {} before executing in env'.format(max_action))
@@ -213,6 +213,15 @@ def test(env, epochs=100, train_episodes=10, test_episodes=100):
             pred_Xs = []
             pred_Ys = []
             pred_Zs = []
+
+
+            real_elbow_Xs = []
+            real_elbow_Ys = []
+            real_elbow_Zs = []
+            pred_elbow_Xs = []
+            pred_elbow_Ys = []
+            pred_elbow_Zs = []
+
             pred_ds = []
             real_ds = []
             drifts = []
@@ -223,6 +232,14 @@ def test(env, epochs=100, train_episodes=10, test_episodes=100):
             pred_Xs.append(obs[4])
             pred_Ys.append(obs[5])
             pred_Zs.append(obs[6])
+
+            real_elbow_Xs.append(float(env.r[0]*math.cos(obs[0])*math.sin(obs[1])))
+            real_elbow_Ys.append(float(env.r[0]*math.sin(obs[0])*math.sin(obs[1])))
+            real_elbow_Zs.append(float(env.r[0]*math.cos(obs[1])))
+            pred_elbow_Xs.append(float(env.r[0]*math.cos(obs[0]*math.sin(obs[1]))))
+            pred_elbow_Ys.append(float(env.r[0]*math.sin(obs[0])*math.sin(obs[1])))
+            pred_elbow_Zs.append(float(env.r[0]*math.cos(obs[1])))
+
             pred_ds.append(init_d)
             real_ds.append(init_d)
             drifts.append(0)
@@ -244,13 +261,25 @@ def test(env, epochs=100, train_episodes=10, test_episodes=100):
                 pred_Xs.append(new_obs[4])
                 pred_Ys.append(new_obs[5])
                 pred_Zs.append(new_obs[6])
+
+                real_elbow_Xs.append(float(env.r[0]*math.cos(obs[0])*math.sin(real_obs[1])))
+                real_elbow_Ys.append(float(env.r[0]*math.sin(obs[0])*math.sin(real_obs[1])))
+                real_elbow_Zs.append(float(env.r[0]*math.cos(real_obs[1])))
+                pred_elbow_Xs.append(float(env.r[0]*math.cos(obs[0]*math.sin(new_obs[1]))))
+                pred_elbow_Ys.append(float(env.r[0]*math.sin(obs[0])*math.sin(new_obs[1])))
+                pred_elbow_Zs.append(float(env.r[0]*math.cos(new_obs[1])))
+
+
                 pred_ds.append(d)
                 real_ds.append(real_d)
                 drifts.append(drift)
 
-                # Reverse the commenting of the next 2 lines to change from open loop to closed loop
-                obs = new_obs
-                # obs = real_obs
+                if loop == 'open':
+                    obs = new_obs
+                elif loop == 'closed':
+                    obs = real_obs
+                else:
+                    obs = new_obs
 
 
                 episode_step += 1
@@ -273,14 +302,52 @@ def test(env, epochs=100, train_episodes=10, test_episodes=100):
                     fig = plt.figure()
                     ax = fig.add_subplot(111, projection='3d')
 
-                    ax.plot(real_Xs, real_Ys, real_Zs)
-                    ax.scatter(real_Xs, real_Ys, real_Zs)
 
-                    ax.plot(pred_Xs, pred_Ys, pred_Zs)
-                    ax.scatter(pred_Xs, pred_Ys, pred_Zs)
+                    if show_model:
+                        for j in range(len(real_Xs)):
+                            armX = [0]
+                            armY = [0]
+                            armZ = [0]
+                            armX.append(real_elbow_Xs[j])
+                            armX.append(real_Xs[j])
+
+                            armY.append(real_elbow_Ys[j])
+                            armY.append(real_Ys[j])
+
+                            armZ.append(real_elbow_Zs[j])
+                            armZ.append(real_Zs[j])
+
+                            ax.plot(armX, armY, armZ, marker='o', linestyle='-', color='blue', alpha=0.3)
+                            ax.scatter(armX, armY, armZ, marker='o', linestyle='-', color='blue', alpha=0.3)
+                        for j in range(len(pred_Xs)):
+                            armX = [0]
+                            armY = [0]
+                            armZ = [0]
+                            armX.append(pred_elbow_Xs[j])
+                            armX.append(pred_Xs[j])
+
+                            armY.append(pred_elbow_Ys[j])
+                            armY.append(pred_Ys[j])
+
+                            armZ.append(pred_elbow_Zs[j])
+                            armZ.append(pred_Zs[j])
+
+                            ax.plot(armX, armY, armZ, marker='o', linestyle='-', color='orange', alpha=0.3)
+                            ax.scatter(armX, armY, armZ, marker='o', linestyle='-', color='orange', alpha=0.3)
+
+                    ax.plot(real_Xs, real_Ys, real_Zs, linestyle='--', color='blue', label='real')
+                    ax.scatter(real_Xs, real_Ys, real_Zs, marker='o', color='blue', label='real')
+
+                    ax.plot(pred_Xs, pred_Ys, pred_Zs, linestyle='--', color='orange', label='real')
+                    ax.scatter(pred_Xs, pred_Ys, pred_Zs, marker='o', color='orange', label='real')
 
                     ax.scatter(env.target[0], env.target[1], env.target[2], c='r', marker='x')
                     ax.scatter(start_pos[0], start_pos[1], start_pos[2], c='r', marker='o')
+
+
+                    if show_model:
+                        ax.scatter(0,0,0, marker='v', c='g')
+
                     plt.plot(real_Xs, real_Ys, real_Zs, marker='o', linestyle='--', label='real')
                     plt.plot(pred_Xs, pred_Ys, pred_Zs, marker='o', linestyle='--', label='pred')
                     ax.set_xlim(-2, 2)

@@ -6,7 +6,7 @@ import logger
 from env_learner import EnvLearner
 from mpi4py import MPI
 from matplotlib import pyplot as plt
-import time
+import time, math
 
 def train_env_learner(env_learner, train, total_steps, valid=None, logger=None, log_interval=10, early_stopping=-1,
                       saver=None, save_str=None):
@@ -96,7 +96,7 @@ def find_next_move_test(env, env_learner, obs, max_action, episode_step, bottom=
     # print('to: '+str(min_d))
     return min_act
 
-def test(env, epochs=100, train_episodes=100, test_episodes=100):
+def test(env, epochs=100, train_episodes=100, test_episodes=100, loop='open', show_model=False):
 
     assert (np.abs(env.action_space.low) == env.action_space.high).all()  # we assume symmetric actions.
     max_action = env.action_space.high
@@ -198,6 +198,12 @@ def test(env, epochs=100, train_episodes=100, test_episodes=100):
             real_Ys = []
             pred_Xs = []
             pred_Ys = []
+
+            real_elbow_Xs = []
+            real_elbow_Ys = []
+            pred_elbow_Xs = []
+            pred_elbow_Ys = []
+
             pred_ds = []
             real_ds = []
             drifts = []
@@ -207,6 +213,12 @@ def test(env, epochs=100, train_episodes=100, test_episodes=100):
             real_Ys.append(obs[3])
             pred_Xs.append(obs[2])
             pred_Ys.append(obs[3])
+
+            real_elbow_Xs.append(float(env.r[0]*math.cos(obs[0])))
+            real_elbow_Ys.append(float(env.r[0]*math.sin(obs[0])))
+            pred_elbow_Xs.append(float(env.r[0]*math.cos(obs[0])))
+            pred_elbow_Ys.append(float(env.r[0]*math.sin(obs[0])))
+
             pred_ds.append(init_d)
             real_ds.append(init_d)
             drifts.append(0)
@@ -226,14 +238,22 @@ def test(env, epochs=100, train_episodes=100, test_episodes=100):
                 real_Ys.append(real_obs[3])
                 pred_Xs.append(new_obs[2])
                 pred_Ys.append(new_obs[3])
+
+                real_elbow_Xs.append(float(env.r[0] * math.cos(real_obs[0])))
+                real_elbow_Ys.append(float(env.r[0] * math.sin(real_obs[0])))
+                pred_elbow_Xs.append(float(env.r[0] * math.cos(new_obs[0])))
+                pred_elbow_Ys.append(float(env.r[0] * math.sin(new_obs[0])))
+
                 pred_ds.append(d)
                 real_ds.append(real_d)
                 drifts.append(drift)
 
-
-                # Reverse the commenting of the next 2 lines to change from open loop to closed loop
-                obs = new_obs
-                # obs = real_obs
+                if loop == 'open':
+                    obs = new_obs
+                elif loop == 'closed':
+                    obs = real_obs
+                else:
+                    obs = new_obs
 
 
                 episode_step += 1
@@ -243,24 +263,45 @@ def test(env, epochs=100, train_episodes=100, test_episodes=100):
                     done = True
 
                 if done:
-                    print('Episode: '+str(i)+' in '+str(time.time() - start_time)+' seconds')
-                    print(str(episode_step)+'\nPred D: '+str(d)+'\nReal D: '+str(real_d))
-                    print('Drift: '+str(drift))
                     all_final_drifts.append(drift)
                     all_final_lens.append(episode_step)
                     all_final_pred_ds.append(d)
                     all_final_real_ds.append(real_d)
 
                     last_d = env.d
-                    episode_step = 0
-                    plt.plot(real_Xs, real_Ys, marker='o', linestyle='--', label='real')
-                    plt.plot(pred_Xs, pred_Ys, marker='o', linestyle='--', label='pred')
+                    if show_model:
+                        for j in range(len(real_Xs)):
+                            armX = [0]
+                            armY = [0]
+                            armX.append(real_elbow_Xs[j])
+                            armX.append(real_Xs[j])
+                            armY.append(real_elbow_Ys[j])
+                            armY.append(real_Ys[j])
+                            plt.plot(armX, armY, marker='o', linestyle='-', color='blue', alpha=0.3)
+                        for j in range(len(pred_Xs)):
+                            armX = [0]
+                            armY = [0]
+                            armX.append(pred_elbow_Xs[j])
+                            armX.append(pred_Xs[j])
+                            armY.append(pred_elbow_Ys[j])
+                            armY.append(pred_Ys[j])
+                            plt.plot(armX, armY, marker='o', linestyle='-', color='orange', alpha=0.3)
+
+                    plt.plot(real_Xs, real_Ys, marker='o', linestyle='--', color='blue', label='real')
+                    plt.plot(pred_Xs, pred_Ys, marker='o', linestyle='--', color='orange', label='pred')
+
+                    if show_model:
+                        plt.plot(0,0, marker='v', color='g')
                     plt.axis([-2, 2, -2, 2])
                     plt.plot(env.target[0], env.target[1], 'rx')
                     plt.plot(start_pos[0], start_pos[1], 'ro')
                     plt.savefig(datetime_str+'_'+str(i))
                     # plt.show()
                     plt.clf()
+                    print('Episode: '+str(i)+' in '+str(time.time() - start_time)+' seconds')
+                    print(str(episode_step)+'\nPred D: '+str(d)+'\nReal D: '+str(real_d))
+                    print('Drift: '+str(drift))
+                    episode_step = 0
 
         import statistics
         num_bins = 10
