@@ -12,7 +12,7 @@ class EnvLearner:
         # Initialization
         self.buff_len = 5
         self.seq_len = 1
-        self.max_seq_len=10
+        self.max_seq_len = 10
         self.last_r = np.array([0.0]).flatten()
         act_dim = env_in.action_space.shape[0]
         state_dim = env_in.observation_space.shape[0]
@@ -48,9 +48,11 @@ class EnvLearner:
 
         self.out_state = self.out_state_raw*self.state_mul_const
         self.loss_seq = 0.0
+        self.loss_last = 0.0
         out_states = []
         out_states.append(self.out_state_raw)
         self.loss_seq += losses.loss_p(out_states[-1], y_seq_split[0])
+        self.loss_last += losses.loss_p(out_states[-1], tf.slice(input_tmp_seq[-1], [0, 0], [-1, state_dim]))
         for i in range(1, self.seq_len):
             state_tmp = tf.slice(self.x_seq[:],
                                    [0, self.buff_init[0].size],
@@ -63,6 +65,7 @@ class EnvLearner:
             out_state_raw_tmp = self_models.generator_model(input_tmp_seq, state_dim, drop_rate=dropout_rate)
             out_states.append(out_state_raw_tmp)
             self.loss_seq += losses.loss_p(out_states[-1], y_seq_split[i])
+            self.loss_last += losses.loss_p(out_states[-1], out_states[-2])
 
         self.out_state_seq = tf.concat(out_states, axis=1)
 
@@ -80,18 +83,38 @@ class EnvLearner:
 
         x_in = x_seq
         g_in = g_seq
-        self.Dx = self_models.simple_disc(x_in, drop_rate=dropout_rate)
-        self.Dg = self_models.simple_disc(g_in, drop_rate=dropout_rate)
+        self.Dx = self_models.discriminator_model(x_in, drop_rate=dropout_rate)
+        self.Dg = self_models.discriminator_model(g_in, drop_rate=dropout_rate)
         var_d = tf.trainable_variables('discriminator')
         var_g = tf.trainable_variables('generator')
         g_lambda = 1.0
         p_lambda = 10.0
+        t_lambda = 0.0
 
         """ Vanilla GAN """
+        # self.n_d = 1
+        # self.disc_loss = -tf.reduce_mean(tf.log(self.Dx) + tf.log(1-self.Dg))
+        # self.g_loss = -tf.reduce_mean(tf.log(self.Dg))
+        # self.gen_loss =  g_lambda*self.g_loss + p_lambda * self.loss_seq
+        # self.train_step_disc = tf.train.AdamOptimizer(lr_disc).minimize(self.disc_loss, var_list=var_d)
+        # self.train_step_gen = tf.train.AdamOptimizer(lr_gen).minimize(self.gen_loss, var_list=var_g)
+
+        """ WGAN-GP """
         self.n_d = 1
-        self.disc_loss = -tf.reduce_mean(tf.log(self.Dx) + tf.log(1-self.Dg))
-        self.g_loss = -tf.reduce_mean(tf.log(self.Dg))
-        self.gen_loss =  g_lambda*self.g_loss + p_lambda * self.loss_seq
+        epsilon = 0.01
+        gp_lambda = 10
+
+        self.disc_loss = tf.reduce_mean(self.Dg) - tf.reduce_mean(self.Dx)
+        self.g_loss = -tf.reduce_mean(self.Dg)
+        self.gen_loss =  g_lambda*self.g_loss + \
+                         p_lambda * self.loss_seq + \
+                         t_lambda * self.loss_last
+        x_hat = epsilon*self.Dx + (1-epsilon)*self.Dg
+        grad_list = tf.gradients(x_hat, var_d)[2:]
+        GP = 0.0
+        for layer in grad_list:
+            GP += gp_lambda * (tf.sqrt(tf.reduce_sum(tf.square(layer))) - 1) ** 2
+        self.disc_loss += GP
         self.train_step_disc = tf.train.AdamOptimizer(lr_disc).minimize(self.disc_loss, var_list=var_d)
         self.train_step_gen = tf.train.AdamOptimizer(lr_gen).minimize(self.gen_loss, var_list=var_g)
 
@@ -106,7 +129,7 @@ class EnvLearner:
             data = data[batch_size:]
         return batches
 
-    def __prep_data__(self, data, batch_size=16):
+    def __prep_data__(self, data, batch_size=32):
         G = []
         X = []
         A = []
@@ -229,7 +252,7 @@ class EnvLearner:
                                                                                           self.y_seq: S[i],
                                                                                           self.a_seq: A[i]
                                                                                           })
-            lC += ls/self.seq_len
+            lC += ls
         return lGen / len(X), lDisc / len(X), lC / len(X)
 
     def step(self, obs_in, action_in, episode_step, save=True, buff=None):

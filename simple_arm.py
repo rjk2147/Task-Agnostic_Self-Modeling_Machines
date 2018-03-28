@@ -37,15 +37,19 @@ class SimpleArm(gym.Env):
 
     def __get_pos__(self, x, load=False):
         y = np.zeros(2)
+        last_deg = 0.0
         for j in range(self.r.size):
-            y[0] += float(self.r[j]*math.cos(x[j]))
-            y[1] += float(self.r[j]*math.sin(x[j]))
+            y[0] += float(self.r[j]*math.cos(last_deg+x[j]))
+            y[1] += float(self.r[j]*math.sin(last_deg+x[j]))
+            last_deg += x[j]
         return y
 
     def __clip_x__(self):
         for i in range(self.x.size):
-            while self.x[i] > math.pi: self.x[i] -= 2*math.pi
-            while self.x[i] < -math.pi: self.x[i] += 2*math.pi
+            if np.abs(self.x[i]) > 7*math.pi/8:
+                self.x[i] = np.sign(self.x[i])*(7*math.pi/8)
+            # while self.x[i] > math.pi: self.x[i] -= 2*math.pi
+            # while self.x[i] < -math.pi: self.x[i] += 2*math.pi
         return self.x
 
     def reset(self):

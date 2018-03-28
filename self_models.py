@@ -9,20 +9,20 @@ def generator_model(x, out_dim, drop_rate=0.5):
             x_seq.append(x_tmp)
 
         # x_seq = tf.split(x, buff_len, 1)
-        # rnn_cell = tf.contrib.rnn.BasicLSTMCell(512)
-        rnn_cell = tf.contrib.rnn.GRUCell(512)
+        # rnn_cell = tf.contrib.rnn.BasicLSTMCell(1024)
+        rnn_cell = tf.contrib.rnn.GRUCell(1024)
         outputs, states = tf.nn.static_rnn(rnn_cell, x_seq, dtype=tf.float32)
         x = outputs[-1]
 
-        # x_new = []
-        # # CNNs structured according to https://wiki.eecs.yorku.ca/lab/MLL/projects:cnn4asr:start
-        # for x in x_seq:
-        #     x = tf.expand_dims(x, -1)
-        #     x_new.append(x)
-        # x = tf.concat(x_new, axis=2)
-        # x = tf.layers.conv1d(x, 64, 3)
-        # x = tf.layers.conv1d(x, 32, 1)
-        # x = tf.layers.flatten(x)
+        x_new = []
+        # CNNs structured according to https://wiki.eecs.yorku.ca/lab/MLL/projects:cnn4asr:start
+        for x in outputs:
+            x = tf.expand_dims(x, -1)
+            x_new.append(x)
+        x = tf.concat(x_new, axis=2)
+        x = tf.layers.conv1d(x, 64, 3)
+        x = tf.layers.conv1d(x, 32, 1)
+        x = tf.layers.flatten(x)
 
         x = tf.layers.batch_normalization(x)
         x = tf.layers.dense(x, 512)
@@ -30,7 +30,17 @@ def generator_model(x, out_dim, drop_rate=0.5):
         x = tf.nn.relu(x)
 
         x = tf.layers.batch_normalization(x)
+        x = tf.layers.dense(x, 256)
+        x = tf.layers.dropout(x, rate=drop_rate)
+        x = tf.nn.relu(x)
+
+        x = tf.layers.batch_normalization(x)
         x = tf.layers.dense(x, 128)
+        x = tf.layers.dropout(x, rate=drop_rate)
+        x = tf.nn.relu(x)
+
+        x = tf.layers.batch_normalization(x)
+        x = tf.layers.dense(x, 256)
         x = tf.layers.dropout(x, rate=drop_rate)
         x = tf.nn.relu(x)
 
