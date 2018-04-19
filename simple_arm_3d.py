@@ -6,7 +6,7 @@ import math
 
 class SimpleArm(gym.Env):
     def __init__(self, train=True):
-        self.r = np.array([1, 1, 1])
+        self.r = np.array([1, 1])
         self.max_iter = 100
         self.train = train
 
@@ -89,8 +89,11 @@ class SimpleArm(gym.Env):
     def step(self, action, save=True):
         if save:
             self.x += action
-            self.x += np.random.normal(0, math.pi/90.0, size=self.x.size)
-            self.__clip_x__()
+
+            # Comment out for baseline
+            # self.x += np.random.normal(0, math.pi/90.0, size=self.x.size)
+            # self.__clip_x__()
+
             self.y = self.__get_pos__(self.x)
             self.iteration += 1
             self.done = (self.iteration >= self.max_iter)

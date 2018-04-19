@@ -222,55 +222,6 @@ def run_tests(test_episodes, env, data_log, env_learner, max_action, loop):
                 # plt.close(fig)
     return failures, all_final_drifts, all_final_lens, all_final_pred_ds, all_final_real_ds
 
-
-def train_env_learner(env_learner, train, total_steps, valid=None, logger=None, log_interval=10, early_stopping=-1,
-                      saver=None, save_str=None):
-    min_loss = 10000000000
-    stop_count = 0
-    for i in range(total_steps):
-        if i > 0 and i%(total_steps/env_learner.max_seq_len) == 0 and env_learner.seq_len < env_learner.max_seq_len:
-            env_learner.seq_len += 1
-            print('Sequence Length: '+str(env_learner.seq_len))
-
-        if i % log_interval == 0 and logger is not None and valid is not None:
-            (vGen, vDisc, vC) = env_learner.get_loss(valid)
-            logger.info('Epoch: ' + str(i) + '/' + str(total_steps))
-            logger.info('Valid Loss')
-            logger.info('Gen:  '+str(vGen))
-            logger.info('Disc: '+str(vDisc))
-            logger.info('Close: '+str(vC))
-            logger.info()
-            if saver is not None and save_str is not None:
-                save_path = saver.save(env_learner.sess, 'models/' + str(save_str) + '.ckpt')
-                logger.info("Model saved in path: %s" % save_path)
-        start = time.time()
-        tlGen, tlDisc = env_learner.train_adv(train)
-        duration = time.time() - start
-        if tlGen < min_loss:
-            min_loss = tlGen
-            stop_count = 0
-        else:
-            stop_count += 1
-        if stop_count > early_stopping and early_stopping > 0:
-            break
-        if i % log_interval != 0 and logger is not None:
-            logger.info('Epoch: ' + str(i) + '/' + str(total_steps) + ' in ' + str(duration) + 's')
-            logger.info('Train Loss')
-            logger.info('Gen:  '+str(tlGen))
-            logger.info('Disc: '+str(tlDisc))
-            logger.info()
-    if logger is not None and valid is not None:
-        (vGen, vDisc, vC) = env_learner.get_loss(valid)
-        logger.info('Final Epoch: ')
-        logger.info('Valid Loss')
-        logger.info('Gen:  '+str(vGen))
-        logger.info('Disc: '+str(vDisc))
-        logger.info('Close: '+str(vC))
-        logger.info()
-    if saver is not None and save_str is not None:
-        save_path = saver.save(env_learner.sess, 'models/' + str(save_str) + '.ckpt')
-        logger.info("Final Model saved in path: %s" % save_path)
-
 def find_next_move_train(env, env_learner, obs, max_action, episode_step, dof, bottom=-1, top=1):
     # return find_next_move(env, env_learner, obs, max_action, episode_step, dof, bottom=bottom, top=top, is_test=False)
     return hill_climb(env.action_space.shape[0], env, env_learner, obs, max_action, episode_step, is_test=False, rand=False)
@@ -402,7 +353,7 @@ def test(env, epochs=100, train_episodes=10, test_episodes=100, loop='open', sho
         if load is not None:
             saver.restore(sess, load)
             logger.info('Model: '+load+' Restored')
-            env_learner.sess = sess
+            env_learner.initialize(sess, load=True)
 
 
         # generic data gathering
@@ -410,7 +361,7 @@ def test(env, epochs=100, train_episodes=10, test_episodes=100, loop='open', sho
 
         if load is None:
             env_learner.initialize(sess)
-            sess.graph.finalize()
+            # sess.graph.finalize()
             i = 0
             while i < train_episodes:
                 action = np.random.uniform(-1, 1, env.action_space.shape[0])
@@ -454,7 +405,7 @@ def test(env, epochs=100, train_episodes=10, test_episodes=100, loop='open', sho
 
 
             # Training self model
-            train_env_learner(env_learner, train, epochs, valid, logger, saver=saver, save_str=datetime_str)
+            env_learner.train(train, epochs, valid, logger, saver=saver, save_str=datetime_str)
             logger.info('Trained Self Model')
 
         # Testing in this env
