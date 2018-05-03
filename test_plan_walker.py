@@ -7,11 +7,27 @@ from mpi4py import MPI
 from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from env_learner import EnvLearner
+import gym
+from gym import spaces
+
+class AntWrapper(gym.Env):
+    def __init__(self, ant_env):
+        self.env = ant_env
+        self.action_space = self.env.action_space
+        obs_ones = np.ones(shape=(self.env.observation_space.shape[0],))
+        self.observation_space = spaces.Box(high=5*obs_ones, low=-5*obs_ones)
+        pass
+
+    def reset(self):
+        return self.env.reset()
+    def step(self, action):
+        new_obs, r, done, info = self.env.step(action)
+        return new_obs, r, done, info
 
 def run_tests(test_episodes, env, data_log, env_learner, max_action, loop):
     episode_step = 0
-    last_d = env.d
-    d = last_d
+    # last_d = env.d
+    # d = last_d
     acts = []
     all_final_drifts = []
     all_final_lens = []
@@ -23,15 +39,15 @@ def run_tests(test_episodes, env, data_log, env_learner, max_action, loop):
         start_time = time.time()
         done = False
         obs = env.reset()
-        init_d = np.linalg.norm(env.target - obs[-3:])
-        data_log.write('Episode: ' + str(i) + ' Start\n')
-        data_log.write('Target: ' + str(env.target) + '\n')
-        data_log.write('Pred State: ' + str(obs) + '\n')
-        data_log.write('Pred D: ' + str(init_d) + '\n')
-        data_log.write('Real State: ' + str(obs) + '\n')
-        data_log.write('Real D: ' + str(init_d) + '\n')
-        data_log.write('Drift: ' + str(0.0) + '\n')
-        start_pos = [obs[-3], obs[-2], obs[-1]]
+        # init_d = np.linalg.norm(env.target - obs[-3:])
+        # data_log.write('Episode: ' + str(i) + ' Start\n')
+        # data_log.write('Target: ' + str(env.target) + '\n')
+        # data_log.write('Pred State: ' + str(obs) + '\n')
+        # data_log.write('Pred D: ' + str(init_d) + '\n')
+        # data_log.write('Real State: ' + str(obs) + '\n')
+        # data_log.write('Real D: ' + str(init_d) + '\n')
+        # data_log.write('Drift: ' + str(0.0) + '\n')
+        # start_pos = [obs[-3], obs[-2], obs[-1]]
 
         real_Xs = []
         real_Ys = []
@@ -50,92 +66,94 @@ def run_tests(test_episodes, env, data_log, env_learner, max_action, loop):
         pred_ds = []
         real_ds = []
         drifts = []
-        real_Xs.append(obs[-3])
-        real_Ys.append(obs[-2])
-        real_Zs.append(obs[-1])
-        pred_Xs.append(obs[-3])
-        pred_Ys.append(obs[-2])
-        pred_Zs.append(obs[-1])
-
-        real_elbow_X = [0]
-        real_elbow_Y = [0]
-        real_elbow_Z = [0]
-        pred_elbow_X = [0]
-        pred_elbow_Y = [0]
-        pred_elbow_Z = [0]
-        for j in range(len(env.r) - 1):
-            real_elbow_X.append(float(env.r[j] * math.cos(obs[2 * j]) * math.sin(obs[2 * j + 1])))
-            real_elbow_Y.append(float(env.r[j] * math.sin(obs[2 * j]) * math.sin(obs[2 * j + 1])))
-            real_elbow_Z.append(float(env.r[j] * math.cos(obs[2 * j + 1])))
-            pred_elbow_X.append(float(env.r[j] * math.cos(obs[2 * j] * math.sin(obs[2 * j + 1]))))
-            pred_elbow_Y.append(float(env.r[j] * math.sin(obs[2 * j]) * math.sin(obs[2 * j + 1])))
-            pred_elbow_Z.append(float(env.r[j] * math.cos(obs[2 * j + 1])))
-        real_elbow_Xs.append(real_elbow_X)
-        real_elbow_Ys.append(real_elbow_Y)
-        real_elbow_Zs.append(real_elbow_Z)
-        pred_elbow_Xs.append(pred_elbow_X)
-        pred_elbow_Ys.append(pred_elbow_Y)
-        pred_elbow_Zs.append(pred_elbow_Z)
-
-        pred_ds.append(init_d)
-        real_ds.append(init_d)
-        drifts.append(0)
-
+        # real_Xs.append(obs[-3])
+        # real_Ys.append(obs[-2])
+        # real_Zs.append(obs[-1])
+        # pred_Xs.append(obs[-3])
+        # pred_Ys.append(obs[-2])
+        # pred_Zs.append(obs[-1])
+        #
+        # real_elbow_X = [0]
+        # real_elbow_Y = [0]
+        # real_elbow_Z = [0]
+        # pred_elbow_X = [0]
+        # pred_elbow_Y = [0]
+        # pred_elbow_Z = [0]
+        # for j in range(len(env.r) - 1):
+        #     real_elbow_X.append(float(env.r[j] * math.cos(obs[2 * j]) * math.sin(obs[2 * j + 1])))
+        #     real_elbow_Y.append(float(env.r[j] * math.sin(obs[2 * j]) * math.sin(obs[2 * j + 1])))
+        #     real_elbow_Z.append(float(env.r[j] * math.cos(obs[2 * j + 1])))
+        #     pred_elbow_X.append(float(env.r[j] * math.cos(obs[2 * j] * math.sin(obs[2 * j + 1]))))
+        #     pred_elbow_Y.append(float(env.r[j] * math.sin(obs[2 * j]) * math.sin(obs[2 * j + 1])))
+        #     pred_elbow_Z.append(float(env.r[j] * math.cos(obs[2 * j + 1])))
+        # real_elbow_Xs.append(real_elbow_X)
+        # real_elbow_Ys.append(real_elbow_Y)
+        # real_elbow_Zs.append(real_elbow_Z)
+        # pred_elbow_Xs.append(pred_elbow_X)
+        # pred_elbow_Ys.append(pred_elbow_Y)
+        # pred_elbow_Zs.append(pred_elbow_Z)
+        #
+        # pred_ds.append(init_d)
+        # real_ds.append(init_d)
+        # drifts.append(0)
+        real_dx = 0.0
+        pred_dx = 0.0
         while not done:
             action = find_next_move_test(env, env_learner, obs, max_action, episode_step, dof=4)
             # action = find_next_move_train(env, env_learner, obs, max_action, episode_step, dof=4)
             new_obs = env_learner.step(obs, max_action * action, episode_step, save=True)
-            real_obs, r, real_done, _ = env.step(max_action * action)
-
-            d = np.linalg.norm(env.target - new_obs[-3:])
-            real_d = np.linalg.norm(env.target - real_obs[-3:])
-            test.append([obs, max_action * action, 0.0, new_obs, done, episode_step])
-            acts.append(action)
-            drift = np.linalg.norm(real_obs[-3:] - new_obs[-3:])
+            real_obs, r, done, _ = env.step(max_action * action)
+            pred_dx += (0.0165)*new_obs[3]/0.3
+            real_dx += (0.0165)*real_obs[3]/0.3
+            # d = np.linalg.norm(env.target - new_obs[-3:])
+            # real_d = np.linalg.norm(env.target - real_obs[-3:])
+            # test.append([obs, max_action * action, 0.0, new_obs, done, episode_step])
+            # acts.append(action)
+            # drift = np.linalg.norm(real_obs[-3:] - new_obs[-3:])
             episode_step += 1
-            data_log.write('Action ' + str(episode_step) + ': ' + str(action) + '\n')
-            data_log.write('Real Reward: ' + str(r) + '\n')
-            data_log.write('Pred State: ' + str(new_obs) + '\n')
-            data_log.write('Pred D: ' + str(d) + '\n')
-            data_log.write('Real State: ' + str(real_obs) + '\n')
-            data_log.write('Real D: ' + str(real_d) + '\n')
-            data_log.write('Drift: ' + str(drift) + '\n')
+            # data_log.write('Action ' + str(episode_step) + ': ' + str(action) + '\n')
+            # data_log.write('Real Reward: ' + str(r) + '\n')
+            # data_log.write('Pred State: ' + str(new_obs) + '\n')
+            # data_log.write('Pred D: ' + str(d) + '\n')
+            # data_log.write('Real State: ' + str(real_obs) + '\n')
+            # data_log.write('Real D: ' + str(real_d) + '\n')
+            # data_log.write('Drift: ' + str(drift) + '\n')
 
             # print('Action '+str(episode_step)+': '+str(action)+'\n')
             # print('Pred D: '+str(d)+'\n')
             # print('Real D: '+str(real_d)+'\n')
             # print('Drift: '+str(drift)+'\n')
 
-            real_Xs.append(real_obs[-3])
-            real_Ys.append(real_obs[-2])
-            real_Zs.append(real_obs[-1])
-            pred_Xs.append(new_obs[-3])
-            pred_Ys.append(new_obs[-2])
-            pred_Zs.append(new_obs[-1])
+            # real_Xs.append(real_obs[-3])
+            # real_Ys.append(real_obs[-2])
+            # real_Zs.append(real_obs[-1])
+            # pred_Xs.append(new_obs[-3])
+            # pred_Ys.append(new_obs[-2])
+            # pred_Zs.append(new_obs[-1])
+            #
+            # real_elbow_X = [0]
+            # real_elbow_Y = [0]
+            # real_elbow_Z = [0]
+            # pred_elbow_X = [0]
+            # pred_elbow_Y = [0]
+            # pred_elbow_Z = [0]
+            # for j in range(len(env.r) - 1):
+            #     real_elbow_X.append(float(env.r[j] * math.cos(real_obs[2 * j]) * math.sin(real_obs[2 * j + 1])))
+            #     real_elbow_Y.append(float(env.r[j] * math.sin(real_obs[2 * j]) * math.sin(real_obs[2 * j + 1])))
+            #     real_elbow_Z.append(float(env.r[j] * math.cos(real_obs[2 * j + 1])))
+            #     pred_elbow_X.append(float(env.r[j] * math.cos(new_obs[2 * j] * math.sin(new_obs[2 * j + 1]))))
+            #     pred_elbow_Y.append(float(env.r[j] * math.sin(new_obs[2 * j]) * math.sin(new_obs[2 * j + 1])))
+            #     pred_elbow_Z.append(float(env.r[j] * math.cos(new_obs[2 * j + 1])))
+            # real_elbow_Xs.append(real_elbow_X)
+            # real_elbow_Ys.append(real_elbow_Y)
+            # real_elbow_Zs.append(real_elbow_Z)
+            # pred_elbow_Xs.append(pred_elbow_X)
+            # pred_elbow_Ys.append(pred_elbow_Y)
+            # pred_elbow_Zs.append(pred_elbow_Z)
 
-            real_elbow_X = [0]
-            real_elbow_Y = [0]
-            real_elbow_Z = [0]
-            pred_elbow_X = [0]
-            pred_elbow_Y = [0]
-            pred_elbow_Z = [0]
-            for j in range(len(env.r) - 1):
-                real_elbow_X.append(float(env.r[j] * math.cos(real_obs[2 * j]) * math.sin(real_obs[2 * j + 1])))
-                real_elbow_Y.append(float(env.r[j] * math.sin(real_obs[2 * j]) * math.sin(real_obs[2 * j + 1])))
-                real_elbow_Z.append(float(env.r[j] * math.cos(real_obs[2 * j + 1])))
-                pred_elbow_X.append(float(env.r[j] * math.cos(new_obs[2 * j] * math.sin(new_obs[2 * j + 1]))))
-                pred_elbow_Y.append(float(env.r[j] * math.sin(new_obs[2 * j]) * math.sin(new_obs[2 * j + 1])))
-                pred_elbow_Z.append(float(env.r[j] * math.cos(new_obs[2 * j + 1])))
-            real_elbow_Xs.append(real_elbow_X)
-            real_elbow_Ys.append(real_elbow_Y)
-            real_elbow_Zs.append(real_elbow_Z)
-            pred_elbow_Xs.append(pred_elbow_X)
-            pred_elbow_Ys.append(pred_elbow_Y)
-            pred_elbow_Zs.append(pred_elbow_Z)
-
-            pred_ds.append(d)
-            real_ds.append(real_d)
-            drifts.append(drift)
+            # pred_ds.append(d)
+            # real_ds.append(real_d)
+            # drifts.append(drift)
 
             if loop == 'open':
                 obs = new_obs
@@ -145,25 +163,28 @@ def run_tests(test_episodes, env, data_log, env_learner, max_action, loop):
             else:
                 obs = new_obs
 
-            done = episode_step > env.max_iter
+            # done = episode_step > env.max_iter
 
-            if d < 0.01:
-                done = True
+            # if d < 0.01:
+            #     done = True
+            # if episode_step%100 == 0:
+            #     print(episode_step)
 
             if done:
                 data_log.write('Episode: ' + str(episode_step) + ' done\n\n')
 
                 print('Episode: ' + str(i) + ' in ' + str(time.time() - start_time) + ' seconds')
-                print(str(episode_step) + '\nPred D: ' + str(d) + '\nReal D: ' + str(real_d))
-                print('Drift: ' + str(drift))
-                if d < 0.01:
-                    all_final_drifts.append(drift)
-                    all_final_lens.append(episode_step)
-                    all_final_pred_ds.append(d)
-                    all_final_real_ds.append(real_d)
-                else:
-                    failures += 1
-
+                print(str(episode_step) + '\nPred Dx: ' + str(pred_dx) + '\nReal Dx: ' + str(real_dx))
+                # print(str(episode_step) + '\nPred D: ' + str(d) + '\nReal D: ' + str(real_d))
+                # print('Drift: ' + str(drift))
+                # if d < 0.01:
+                #     all_final_drifts.append(drift)
+                #     all_final_lens.append(episode_step)
+                #     all_final_pred_ds.append(d)
+                #     all_final_real_ds.append(real_d)
+                # else:
+                #     failures += 1
+                # done = False
                 episode_step = 0
 
                 # Plotting
@@ -233,8 +254,14 @@ def find_next_move_test(env, env_learner, obs, max_action, episode_step, dof, bo
 def evaluate(action, env_learner, obs, max_action, env, episode_step, test=True):
     if not test: new_obs = env.step(max_action * action, save=False)[0]
     else: new_obs = env_learner.step(obs, max_action * action, episode_step, save=False)
-    d = np.linalg.norm(env.target - new_obs[-3:])
-    return -d
+    # d = np.linalg.norm(env.target - new_obs[-3:])
+    dz = new_obs[0]
+    sin_yaw = new_obs[1]
+    cos_yaw = new_obs[2]
+    vx = new_obs[3]
+    rew = vx
+    # rew = new_obs[0] - new_obs[1] + new_obs[2] + new_obs[3]
+    return rew
 
 # taken from wikipedia
 def hill_climb(act_dim, env, env_learner, obs, max_action, episode_step, is_test, rand=False):
@@ -412,7 +439,7 @@ def test(env, epochs=100, train_episodes=10, test_episodes=100, loop='open', sho
 
         # Testing in this env
         failures, all_final_drifts, all_final_lens, all_final_pred_ds, all_final_real_ds = run_tests(test_episodes, env, data_log, env_learner, max_action, loop)
-
+        #
         import statistics
         num_bins = 10
         print('\nModel: \'models/' + str(datetime_str) + '.ckpt\'')
@@ -436,21 +463,21 @@ def test(env, epochs=100, train_episodes=10, test_episodes=100, loop='open', sho
 
         print('\nCompleted In: '+str(time.time()-sess_start)+' s')
 
-        _, _, _ = plt.hist(all_final_drifts, num_bins, facecolor='blue', alpha=0.5)
-        plt.title('Final Drifts')
-        plt.savefig(datetime_str+'_final_drift')
-        plt.clf()
-        _, _, _ = plt.hist(all_final_lens, num_bins, facecolor='blue', alpha=0.5)
-        plt.title('Episode Lengths')
-        plt.savefig(datetime_str+'_final_lens')
-        plt.clf()
-        _, _, _ = plt.hist(all_final_pred_ds, num_bins, facecolor='blue', alpha=0.5)
-        plt.title('Final Predicted Distances')
-        plt.savefig(datetime_str+'_final_pred_ds')
-        plt.clf()
-        _, _, _ = plt.hist(all_final_real_ds, num_bins, facecolor='blue', alpha=0.5)
-        plt.title('Final Real Distances')
-        plt.savefig(datetime_str+'_final_real_ds')
-        plt.clf()
+        # _, _, _ = plt.hist(all_final_drifts, num_bins, facecolor='blue', alpha=0.5)
+        # plt.title('Final Drifts')
+        # plt.savefig(datetime_str+'_final_drift')
+        # plt.clf()
+        # _, _, _ = plt.hist(all_final_lens, num_bins, facecolor='blue', alpha=0.5)
+        # plt.title('Episode Lengths')
+        # plt.savefig(datetime_str+'_final_lens')
+        # plt.clf()
+        # _, _, _ = plt.hist(all_final_pred_ds, num_bins, facecolor='blue', alpha=0.5)
+        # plt.title('Final Predicted Distances')
+        # plt.savefig(datetime_str+'_final_pred_ds')
+        # plt.clf()
+        # _, _, _ = plt.hist(all_final_real_ds, num_bins, facecolor='blue', alpha=0.5)
+        # plt.title('Final Real Distances')
+        # plt.savefig(datetime_str+'_final_real_ds')
+        # plt.clf()
 
 

@@ -4,6 +4,8 @@ import time
 import gym
 import tensorflow as tf
 
+import pybullet as p
+import pybullet_envs
 import simple_arm
 import simple_arm_3d
 import logger
@@ -17,6 +19,9 @@ def run(**kwargs):
         print('Environment simple_arm_2d chosen')
         env = simple_arm.SimpleArm()
         import test_plan as testing
+    elif kwargs['env'] == 'AntBulletEnv-v0':
+        import test_plan_walker as testing
+        env = testing.AntWrapper(gym.make("AntBulletEnv-v0"))
     else:
         print('No valid environment chosen')
         print('Defaulting to simple_arm_2d')
@@ -37,10 +42,10 @@ def run(**kwargs):
 
 def parse_args():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--env', type=str, default='simple_arm_3d')
+    parser.add_argument('--env', type=str, default='AntBulletEnv-v0')
     parser.add_argument('--loop', type=str, default='open')
     parser.add_argument('--nb-epochs', type=int, default=100)
-    parser.add_argument('--nb-train-episodes', type=int, default=1000)
+    parser.add_argument('--nb-train-episodes', type=int, default=200)
     parser.add_argument('--nb-test-episodes', type=int, default=100)
     parser.add_argument('--show-model', dest='show_model', action='store_true')
     parser.add_argument('--load', type=str, default=None)
