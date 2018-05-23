@@ -1,7 +1,15 @@
 import tensorflow as tf
 
-
 def generator_model(x, out_dim, drop_rate=0.5):
+    # return generator_model_arm(x, out_dim, drop_rate)
+    return generator_model_walker(x, out_dim, drop_rate)
+
+def discriminator_model(x, drop_rate=0.5):
+    # return discriminator_model_arm(x, drop_rate)
+    return discriminator_model_walker(x, drop_rate)
+
+
+def generator_model_walker(x, out_dim, drop_rate=0.5):
     with tf.variable_scope('generator', reuse=tf.AUTO_REUSE) as scope:
         x_seq = []
         for x_tmp in x:
@@ -54,10 +62,125 @@ def generator_model(x, out_dim, drop_rate=0.5):
 
         return tf.nn.tanh(x)
 
-
-def discriminator_model(x, drop_rate=0.5):
+def discriminator_model_walker(x, drop_rate=0.5):
     with tf.variable_scope('discriminator', reuse=tf.AUTO_REUSE) as scope:
+        # drop_rate=0.0
+        # x_seq = tf.split(x, buff_len, 1)
+        x_seq = []
+        for x_tmp in x:
+            x_tmp = tf.layers.batch_normalization(x_tmp)
+            x_seq.append(x_tmp)
 
+        # rnn_cell = tf.contrib.rnn.BasicLSTMCell(512)
+        rnn_cell = tf.contrib.rnn.GRUCell(1024)
+        outputs, states = tf.nn.static_rnn(rnn_cell, x, dtype=tf.float32)
+        x = outputs[-1]
+
+        x_new = []
+        # # CNNs structured according to https://wiki.eecs.yorku.ca/lab/MLL/projects:cnn4asr:start
+        for x in outputs:
+            x = tf.expand_dims(x, -1)
+            x_new.append(x)
+        x = tf.concat(x_new, axis=2)
+        x = tf.layers.conv1d(x, 64, 3)
+        x = tf.layers.conv1d(x, 32, 1)
+        x = tf.layers.flatten(x)
+
+        # x = tf.layers.batch_normalization(x)
+        # x = tf.layers.dense(x, 1024)
+        # x = tf.layers.dropout(x, rate=drop_rate)
+        # x = tf.nn.leaky_relu(x)
+
+        x = tf.layers.batch_normalization(x)
+        x = tf.layers.dense(x, 512)
+        x = tf.layers.dropout(x, rate=drop_rate)
+        x = tf.nn.leaky_relu(x)
+
+        # x = tf.layers.batch_normalization(x)
+        # x = tf.layers.dense(x, 512)
+        # x = tf.layers.dropout(x, rate=drop_rate)
+        # x = tf.nn.leaky_relu(x)
+
+        x = tf.layers.batch_normalization(x)
+        x = tf.layers.dense(x, 256)
+        x = tf.layers.dropout(x, rate=drop_rate)
+        x = tf.nn.leaky_relu(x)
+        
+        # x = tf.layers.batch_normalization(x)
+        # x = tf.layers.dense(x, 256)
+        # x = tf.layers.dropout(x, rate=drop_rate)
+        # x = tf.nn.leaky_relu(x)
+
+        x = tf.layers.batch_normalization(x)
+        x = tf.layers.dense(x, 128)
+        x = tf.layers.dropout(x, rate=drop_rate)
+        x = tf.nn.leaky_relu(x)
+
+        # x = tf.layers.batch_normalization(x)
+        # x = tf.layers.dense(x, 128)
+        # x = tf.layers.dropout(x, rate=drop_rate)
+        # x = tf.nn.leaky_relu(x)
+
+        x = tf.layers.batch_normalization(x)
+        x = tf.layers.dense(x, 1)
+        # return x
+        return tf.nn.sigmoid(x)
+
+def generator_model_arm(x, out_dim, drop_rate=0.5):
+    with tf.variable_scope('generator', reuse=tf.AUTO_REUSE) as scope:
+        x_seq = []
+        for x_tmp in x:
+            x_tmp = tf.layers.batch_normalization(x_tmp)
+            x_seq.append(x_tmp)
+
+        # x_seq = tf.split(x, buff_len, 1)
+        # rnn_cell = tf.contrib.rnn.BasicLSTMCell(1024)
+        rnn_cell = tf.contrib.rnn.GRUCell(1024)
+        outputs, states = tf.nn.static_rnn(rnn_cell, x_seq, dtype=tf.float32)
+        x = outputs[-1]
+
+        x_new = []
+        # CNNs structured according to https://wiki.eecs.yorku.ca/lab/MLL/projects:cnn4asr:start
+        for x in outputs:
+            x = tf.expand_dims(x, -1)
+            x_new.append(x)
+        x = tf.concat(x_new, axis=2)
+        x = tf.layers.conv1d(x, 64, 3)
+        x = tf.layers.conv1d(x, 32, 1)
+        x = tf.layers.flatten(x)
+
+        x = tf.layers.batch_normalization(x)
+        x = tf.layers.dense(x, 512)
+        x = tf.layers.dropout(x, rate=drop_rate)
+        x = tf.nn.relu(x)
+
+        x = tf.layers.batch_normalization(x)
+        x = tf.layers.dense(x, 256)
+        x = tf.layers.dropout(x, rate=drop_rate)
+        x = tf.nn.relu(x)
+
+        x = tf.layers.batch_normalization(x)
+        x = tf.layers.dense(x, 128)
+        x = tf.layers.dropout(x, rate=drop_rate)
+        x = tf.nn.relu(x)
+
+        x = tf.layers.batch_normalization(x)
+        x = tf.layers.dense(x, 256)
+        x = tf.layers.dropout(x, rate=drop_rate)
+        x = tf.nn.relu(x)
+
+        x = tf.layers.batch_normalization(x)
+        x = tf.layers.dense(x, 512)
+        x = tf.layers.dropout(x, rate=drop_rate)
+        x = tf.nn.relu(x)
+
+        x = tf.layers.batch_normalization(x)
+        x = tf.layers.dense(x, out_dim)
+
+        return tf.nn.tanh(x)
+
+def discriminator_model_arm(x, drop_rate=0.5):
+    with tf.variable_scope('discriminator', reuse=tf.AUTO_REUSE) as scope:
         # x_seq = tf.split(x, buff_len, 1)
         x_seq = []
         for x_tmp in x:
@@ -98,6 +221,7 @@ def discriminator_model(x, drop_rate=0.5):
         x = tf.layers.dense(x, 1)
         # return x
         return tf.nn.sigmoid(x)
+
 
 #
 # RL Wrappers

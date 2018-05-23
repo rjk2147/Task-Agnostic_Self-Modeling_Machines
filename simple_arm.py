@@ -45,9 +45,9 @@ class SimpleArm(gym.Env):
         return y
 
     def __clip_x__(self):
-        # for i in range(self.x.size):
-        #     if np.abs(self.x[i]) > 7*math.pi/8:
-        #         self.x[i] = np.sign(self.x[i])*(7*math.pi/8)
+        for i in range(self.x.size):
+            if np.abs(self.x[i]) > 7*math.pi/8:
+                self.x[i] = np.sign(self.x[i])*(7*math.pi/8)
         return self.x
 
     def reset(self):

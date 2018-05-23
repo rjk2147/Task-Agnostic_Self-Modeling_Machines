@@ -70,7 +70,7 @@ def run_tests(test_episodes, env, data_log, env_learner, max_action, loop):
         drifts.append(0)
 
         while not done:
-            action = find_next_move_test(env, env_learner, obs, max_action, episode_step)
+            action = find_next_move_test(env, env_learner, obs, max_action, episode_step, dof=2)
             # action = find_next_move_train(env, env_learner, obs, max_action, episode_step, dof=4)
             new_obs = env_learner.step(obs, max_action * action, episode_step, save=True)
             real_obs, r, real_done, _ = env.step(max_action * action)
@@ -204,95 +204,227 @@ def run_tests(test_episodes, env, data_log, env_learner, max_action, loop):
                 # plt.savefig(datetime_str+'_'+str(i))
                 # plt.close(fig)
     return failures, all_final_drifts, all_final_lens, all_final_pred_ds, all_final_real_ds
+#
+# def run_tests(test_episodes, env, data_log, env_learner, max_action, loop):
+#     episode_step = 0
+#     last_d = env.d
+#     d = last_d
+#     acts = []
+#     all_final_drifts = []
+#     all_final_lens = []
+#     all_final_real_ds = []
+#     all_final_pred_ds = []
+#     test = []
+#     failures = 0
+#     for i in range(test_episodes):
+#         start_time = time.time()
+#         done = False
+#         obs = env.reset()
+#         init_d = np.linalg.norm(env.target - obs[-3:])
+#         data_log.write('Episode: ' + str(i) + ' Start\n')
+#         data_log.write('Target: ' + str(env.target) + '\n')
+#         data_log.write('Pred State: ' + str(obs) + '\n')
+#         data_log.write('Pred D: ' + str(init_d) + '\n')
+#         data_log.write('Real State: ' + str(obs) + '\n')
+#         data_log.write('Real D: ' + str(init_d) + '\n')
+#         data_log.write('Drift: ' + str(0.0) + '\n')
+#         start_pos = [obs[-3], obs[-2], obs[-1]]
+#
+#         real_Xs = []
+#         real_Ys = []
+#         real_Zs = []
+#         pred_Xs = []
+#         pred_Ys = []
+#         pred_Zs = []
+#
+#         real_elbow_Xs = []
+#         real_elbow_Ys = []
+#         real_elbow_Zs = []
+#         pred_elbow_Xs = []
+#         pred_elbow_Ys = []
+#         pred_elbow_Zs = []
+#
+#         pred_ds = []
+#         real_ds = []
+#         drifts = []
+#         real_Xs.append(obs[-3])
+#         real_Ys.append(obs[-2])
+#         real_Zs.append(obs[-1])
+#         pred_Xs.append(obs[-3])
+#         pred_Ys.append(obs[-2])
+#         pred_Zs.append(obs[-1])
+#
+#         real_elbow_X = [0]
+#         real_elbow_Y = [0]
+#         real_elbow_Z = [0]
+#         pred_elbow_X = [0]
+#         pred_elbow_Y = [0]
+#         pred_elbow_Z = [0]
+#         for j in range(len(env.r) - 1):
+#             real_elbow_X.append(float(env.r[j] * math.cos(obs[2 * j]) * math.sin(obs[2 * j + 1])))
+#             real_elbow_Y.append(float(env.r[j] * math.sin(obs[2 * j]) * math.sin(obs[2 * j + 1])))
+#             real_elbow_Z.append(float(env.r[j] * math.cos(obs[2 * j + 1])))
+#             pred_elbow_X.append(float(env.r[j] * math.cos(obs[2 * j] * math.sin(obs[2 * j + 1]))))
+#             pred_elbow_Y.append(float(env.r[j] * math.sin(obs[2 * j]) * math.sin(obs[2 * j + 1])))
+#             pred_elbow_Z.append(float(env.r[j] * math.cos(obs[2 * j + 1])))
+#         real_elbow_Xs.append(real_elbow_X)
+#         real_elbow_Ys.append(real_elbow_Y)
+#         real_elbow_Zs.append(real_elbow_Z)
+#         pred_elbow_Xs.append(pred_elbow_X)
+#         pred_elbow_Ys.append(pred_elbow_Y)
+#         pred_elbow_Zs.append(pred_elbow_Z)
+#
+#         pred_ds.append(init_d)
+#         real_ds.append(init_d)
+#         drifts.append(0)
+#
+#         while not done:
+#             action = find_next_move_test(env, env_learner, obs, max_action, episode_step, dof=4)
+#             # action = find_next_move_train(env, env_learner, obs, max_action, episode_step, dof=4)
+#             new_obs = env_learner.step(obs, max_action * action, episode_step, save=True)
+#             real_obs, r, real_done, _ = env.step(max_action * action)
+#
+#             d = np.linalg.norm(env.target - new_obs[-3:])
+#             real_d = np.linalg.norm(env.target - real_obs[-3:])
+#             test.append([obs, max_action * action, 0.0, new_obs, done, episode_step])
+#             acts.append(action)
+#             drift = np.linalg.norm(real_obs[-3:] - new_obs[-3:])
+#             episode_step += 1
+#             data_log.write('Action ' + str(episode_step) + ': ' + str(action) + '\n')
+#             data_log.write('Real Reward: ' + str(r) + '\n')
+#             data_log.write('Pred State: ' + str(new_obs) + '\n')
+#             data_log.write('Pred D: ' + str(d) + '\n')
+#             data_log.write('Real State: ' + str(real_obs) + '\n')
+#             data_log.write('Real D: ' + str(real_d) + '\n')
+#             data_log.write('Drift: ' + str(drift) + '\n')
+#
+#             # print('Action '+str(episode_step)+': '+str(action)+'\n')
+#             # print('Pred D: '+str(d)+'\n')
+#             # print('Real D: '+str(real_d)+'\n')
+#             # print('Drift: '+str(drift)+'\n')
+#
+#             real_Xs.append(real_obs[-3])
+#             real_Ys.append(real_obs[-2])
+#             real_Zs.append(real_obs[-1])
+#             pred_Xs.append(new_obs[-3])
+#             pred_Ys.append(new_obs[-2])
+#             pred_Zs.append(new_obs[-1])
+#
+#             real_elbow_X = [0]
+#             real_elbow_Y = [0]
+#             real_elbow_Z = [0]
+#             pred_elbow_X = [0]
+#             pred_elbow_Y = [0]
+#             pred_elbow_Z = [0]
+#             for j in range(len(env.r) - 1):
+#                 real_elbow_X.append(float(env.r[j] * math.cos(real_obs[2 * j]) * math.sin(real_obs[2 * j + 1])))
+#                 real_elbow_Y.append(float(env.r[j] * math.sin(real_obs[2 * j]) * math.sin(real_obs[2 * j + 1])))
+#                 real_elbow_Z.append(float(env.r[j] * math.cos(real_obs[2 * j + 1])))
+#                 pred_elbow_X.append(float(env.r[j] * math.cos(new_obs[2 * j] * math.sin(new_obs[2 * j + 1]))))
+#                 pred_elbow_Y.append(float(env.r[j] * math.sin(new_obs[2 * j]) * math.sin(new_obs[2 * j + 1])))
+#                 pred_elbow_Z.append(float(env.r[j] * math.cos(new_obs[2 * j + 1])))
+#             real_elbow_Xs.append(real_elbow_X)
+#             real_elbow_Ys.append(real_elbow_Y)
+#             real_elbow_Zs.append(real_elbow_Z)
+#             pred_elbow_Xs.append(pred_elbow_X)
+#             pred_elbow_Ys.append(pred_elbow_Y)
+#             pred_elbow_Zs.append(pred_elbow_Z)
+#
+#             pred_ds.append(d)
+#             real_ds.append(real_d)
+#             drifts.append(drift)
+#
+#             if loop == 'open':
+#                 obs = new_obs
+#             elif loop == 'closed':
+#                 obs = real_obs
+#                 # d = real_d
+#             else:
+#                 obs = new_obs
+#
+#             done = episode_step > env.max_iter
+#
+#             if d < 0.01:
+#                 done = True
+#
+#             if done:
+#                 data_log.write('Episode: ' + str(episode_step) + ' done\n\n')
+#
+#                 print('Episode: ' + str(i) + ' in ' + str(time.time() - start_time) + ' seconds')
+#                 print(str(episode_step) + '\nPred D: ' + str(d) + '\nReal D: ' + str(real_d))
+#                 print('Drift: ' + str(drift))
+#                 if d < 0.01:
+#                     all_final_drifts.append(drift)
+#                     all_final_lens.append(episode_step)
+#                     all_final_pred_ds.append(d)
+#                     all_final_real_ds.append(real_d)
+#                 else:
+#                     failures += 1
+#
+#                 episode_step = 0
+#
+#                 # Plotting
+#                 # fig = plt.figure()
+#                 # ax = fig.add_subplot(111, projection='3d')
+#                 #
+#                 #
+#                 # if show_model:
+#                 #     for j in range(len(real_Xs)):
+#                 #         armX = []
+#                 #         armY = []
+#                 #         armZ = []
+#                 #         armX.extend(real_elbow_Xs[j])
+#                 #         armX.append(real_Xs[j])
+#                 #
+#                 #         armY.extend(real_elbow_Ys[j])
+#                 #         armY.append(real_Ys[j])
+#                 #
+#                 #         armZ.extend(real_elbow_Zs[j])
+#                 #         armZ.append(real_Zs[j])
+#                 #
+#                 #         ax.plot(armX, armY, armZ, marker='o', linestyle='-', color='blue', alpha=0.3)
+#                 #         ax.scatter(armX, armY, armZ, marker='o', linestyle='-', color='blue', alpha=0.3)
+#                 #     for j in range(len(pred_Xs)):
+#                 #         armX.extend(pred_elbow_Xs[j])
+#                 #         armX.append(pred_Xs[j])
+#                 #
+#                 #         armY.extend(pred_elbow_Ys[j])
+#                 #         armY.append(pred_Ys[j])
+#                 #
+#                 #         armZ.extend(pred_elbow_Zs[j])
+#                 #         armZ.append(pred_Zs[j])
+#                 #
+#                 #         ax.plot(armX, armY, armZ, marker='o', linestyle='-', color='orange', alpha=0.3)
+#                 #         ax.scatter(armX, armY, armZ, marker='o', linestyle='-', color='orange', alpha=0.3)
+#                 #
+#                 # ax.plot(real_Xs, real_Ys, real_Zs, linestyle='--', color='blue', label='real')
+#                 # ax.scatter(real_Xs, real_Ys, real_Zs, marker='o', color='blue', label='real')
+#                 #
+#                 # ax.plot(pred_Xs, pred_Ys, pred_Zs, linestyle='--', color='orange', label='real')
+#                 # ax.scatter(pred_Xs, pred_Ys, pred_Zs, marker='o', color='orange', label='real')
+#                 #
+#                 # ax.scatter(env.target[0], env.target[1], env.target[2], c='r', marker='x')
+#                 # ax.scatter(start_pos[0], start_pos[1], start_pos[2], c='r', marker='o')
+#                 #
+#                 #
+#                 # if show_model:
+#                 #     ax.scatter(0,0,0, marker='v', c='g')
+#                 #
+#                 # plt.plot(real_Xs, real_Ys, real_Zs, marker='o', linestyle='--', label='real')
+#                 # plt.plot(pred_Xs, pred_Ys, pred_Zs, marker='o', linestyle='--', label='pred')
+#                 # ax.set_xlim(-sum(env.r), sum(env.r))
+#                 # ax.set_ylim(-sum(env.r), sum(env.r))
+#                 # ax.set_zlim(-sum(env.r), sum(env.r))
+#                 # plt.savefig(datetime_str+'_'+str(i))
+#                 # plt.close(fig)
+#     return failures, all_final_drifts, all_final_lens, all_final_pred_ds, all_final_real_ds
 
-def train_env_learner(env_learner, train, total_steps, valid=None, logger=None, log_interval=10, early_stopping=-1,
-                      saver=None, save_str=None):
-    min_loss = 10000000000
-    stop_count = 0
-    for i in range(total_steps):
-        if i > 0 and i%(total_steps/env_learner.max_seq_len) == 0 and env_learner.seq_len < env_learner.max_seq_len:
-            env_learner.seq_len += 1
-            print('Sequence Length: '+str(env_learner.seq_len))
-
-        if i % log_interval == 0 and logger is not None and valid is not None:
-            (vGen, vDisc, vC) = env_learner.get_loss(valid)
-            logger.info('Epoch: ' + str(i) + '/' + str(total_steps))
-            logger.info('Valid Loss')
-            logger.info('Gen:  '+str(vGen))
-            logger.info('Disc: '+str(vDisc))
-            logger.info('Close: '+str(vC))
-            logger.info()
-            if saver is not None and save_str is not None:
-                save_path = saver.save(env_learner.sess, 'models/' + str(save_str) + '.ckpt')
-                logger.info("Model saved in path: %s" % save_path)
-        start = time.time()
-        tlGen, tlDisc = env_learner.train_adv(train)
-        duration = time.time() - start
-        if tlGen < min_loss:
-            min_loss = tlGen
-            stop_count = 0
-        else:
-            stop_count += 1
-        if stop_count > early_stopping and early_stopping > 0:
-            break
-        if i % log_interval != 0 and logger is not None:
-            logger.info('Epoch: ' + str(i) + '/' + str(total_steps) + ' in ' + str(duration) + 's')
-            logger.info('Train Loss')
-            logger.info('Gen:  '+str(tlGen))
-            logger.info('Disc: '+str(tlDisc))
-            logger.info()
-    if logger is not None and valid is not None:
-        (vGen, vDisc, vC) = env_learner.get_loss(valid)
-        logger.info('Final Epoch: ')
-        logger.info('Valid Loss')
-        logger.info('Gen:  '+str(vGen))
-        logger.info('Disc: '+str(vDisc))
-        logger.info('Close: '+str(vC))
-        logger.info()
-    if saver is not None and save_str is not None:
-        save_path = saver.save(env_learner.sess, 'models/' + str(save_str) + '.ckpt')
-        logger.info("Final Model saved in path: %s" % save_path)
-
-def find_next_move_train(env, env_learner, obs, max_action, episode_step, bottom=-1, top=1):
-    # min_act = np.zeros(env.action_space.shape[0])
-    # # min_obs = env_learner.step(obs, max_action * min_act, episode_step, save=False)
-    # min_obs = env.step(max_action*min_act, save=False)[0]
-    # min_d = np.linalg.norm(env.target - min_obs[2:])
-    # # print('from: '+str(min_d))
-    # for i in range(101):
-    #     action = np.zeros(env.action_space.shape[0])
-    #     action[0] = bottom+i*((top-bottom)/100)
-    #     for j in range(101):
-    #         action[1] = bottom+j*((top-bottom)/100)
-    #         # new_obs = env_learner.step(obs, max_action * action, episode_step, save=False)
-    #         new_obs = env.step(max_action*action, save=False)[0]
-    #         d = np.linalg.norm(env.target - new_obs[2:])
-    #         if d < min_d:
-    #             min_act = action.copy()
-    #             min_d = d
-    # # print('to: '+str(min_d))
-    # return min_act
+def find_next_move_train(env, env_learner, obs, max_action, episode_step, dof, bottom=-1, top=1):
+    # return find_next_move(env, env_learner, obs, max_action, episode_step, dof, bottom=bottom, top=top, is_test=False)
     return hill_climb(env.action_space.shape[0], env, env_learner, obs, max_action, episode_step, is_test=False, rand=False)
 
-def find_next_move_test(env, env_learner, obs, max_action, episode_step, bottom=-1, top=1):
-    # min_act = np.zeros(env.action_space.shape[0])
-    # min_obs = env_learner.step(obs, max_action * min_act, episode_step, save=False)
-    # # min_obs = env.step(max_action*min_act, save=False)[0]
-    # min_d = np.linalg.norm(env.target - min_obs[2:])
-    # # print('from: '+str(min_d))
-    # for i in range(101):
-    #     action = np.zeros(env.action_space.shape[0])
-    #     action[0] = bottom+i*((top-bottom)/100)
-    #     for j in range(101):
-    #         action[1] = bottom+j*((top-bottom)/100)
-    #         new_obs = env_learner.step(obs, max_action * action, episode_step, save=False)
-    #         # new_obs = env.step(max_action*action, save=False)[0]
-    #         d = np.linalg.norm(env.target - new_obs[2:])
-    #         if d < min_d:
-    #             min_act = action.copy()
-    #             min_d = d
-    # # print('to: '+str(min_d))
-    # return min_act
+def find_next_move_test(env, env_learner, obs, max_action, episode_step, dof, bottom=-1, top=1):
+    # return find_next_move(env, env_learner, obs, max_action, episode_step, dof, bottom=bottom, top=top, is_test=True)
     return hill_climb(env.action_space.shape[0], env, env_learner, obs, max_action, episode_step, is_test=True, rand=False)
 
 def evaluate(action, env_learner, obs, max_action, env, episode_step, test=True):
@@ -335,8 +467,51 @@ def hill_climb(act_dim, env, env_learner, obs, max_action, episode_step, is_test
         if (evaluate(current_point, env_learner, obs, max_action, env, episode_step, test=is_test) - before) < epsilon:
             return current_point
 
-def test(env, epochs=100, train_episodes=100, test_episodes=100, loop='open', show_model=False, load=None):
+def find_next_move(env, env_learner, obs, max_action, episode_step, dof, bottom=-1, top=1, is_test=False):
+    min_act = np.zeros(env.action_space.shape[0])
+    min_obs = env.step(max_action*min_act, save=False)[0]
+    search_prec = 5
+    max_depth = 10
+    min_d = np.linalg.norm(env.target - min_obs[-2:])
 
+    new_top = np.ones(min_act.size)*top
+    new_bottom = np.ones(min_act.size)*bottom
+
+    # Time Complexity = search_prec^(dof)
+    # Assumes convexity in the action space, may not always be true
+
+    # for i in range(search_prec+1):
+    action = np.zeros(env.action_space.shape[0])
+    min_act, min_d = __rec_next_move__(action, 0, search_prec, new_top, new_bottom, env, env_learner, max_action, dof, min_d, obs, episode_step, test=is_test)
+    for i in range(max_depth): # max_depth search
+        first_act = np.zeros(min_act.size)+min_act
+        inc = ((new_top - new_bottom) / search_prec)
+        new_top = np.minimum(np.ones(min_act.size)*first_act + inc, new_top)
+        new_bottom = np.maximum(np.ones(min_act.size)*first_act - inc, new_bottom)
+        action = np.zeros(env.action_space.shape[0])
+        min_act, min_d = __rec_next_move__(action, 0, search_prec, new_top, new_bottom, env, env_learner, max_action, dof, min_d, obs, episode_step, test=is_test)
+    return min_act
+
+def __rec_next_move__(action, depth, search_prec, new_top, new_bottom, env, env_learner, max_action, dof, min_d, obs, episode_step, test):
+    if depth == action.size:
+        if not test: new_obs = env.step(max_action * action, save=False)[0]
+        else: new_obs = env_learner.step(obs, max_action * action, episode_step, save=False)
+        d = np.linalg.norm(env.target - new_obs[-2:])
+        return action, d
+    tmp_min_d = 1000000
+    min_act = np.zeros(action.size)
+    for i in range(search_prec + 1):
+        action[depth] = new_bottom[depth] + i * ((new_top[depth] - new_bottom[depth]) / search_prec)
+        action, new_min_d = __rec_next_move__(action, depth + 1, search_prec, new_top, new_bottom, env, env_learner, max_action, dof, min_d,
+                          obs, episode_step, test)
+        if new_min_d < tmp_min_d:
+            min_act = action.copy()
+            tmp_min_d = new_min_d
+    # if depth == action.size-1:
+    return min_act, tmp_min_d
+    # else: return __rec_next_move__(action, depth+1, search_prec, new_top, new_bottom, env, env_learner, max_action, dof, min_d, obs, episode_step, test)
+
+def test(env, epochs=100, train_episodes=10, test_episodes=100, loop='open', show_model=False, load=None):
     assert (np.abs(env.action_space.low) == env.action_space.high).all()  # we assume symmetric actions.
     max_action = env.action_space.high
     logger.info('scaling actions by {} before executing in env'.format(max_action))
@@ -344,9 +519,10 @@ def test(env, epochs=100, train_episodes=100, test_episodes=100, loop='open', sh
     env_learner = EnvLearner(env)
     logger.info('Done Env Learner')
     logger.info('Using agent with the following configuration:')
-
-    saver = tf.train.Saver()
-
+    try:
+        saver = tf.train.Saver()
+    except:
+        saver=None
     # gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.45)
     gpu_options = None
     num_cpu = 1
@@ -359,6 +535,7 @@ def test(env, epochs=100, train_episodes=100, test_episodes=100, loop='open', sh
             inter_op_parallelism_threads=num_cpu,
             intra_op_parallelism_threads=num_cpu,
             gpu_options=gpu_options)
+
     episode_duration = -1
     nb_valid_episodes = 50
     episode_step = 0
@@ -366,25 +543,24 @@ def test(env, epochs=100, train_episodes=100, test_episodes=100, loop='open', sh
     max_ep_rew = -10000
     train = []
     valid = []
-    test = []
-    with tf.Session(config=tf_config) as sess:
-        datetime_str = datetime.datetime.now().strftime("%Y-%m-%d-%H:%M:%S")
-        data_log = open(datetime_str+'_log.txt', 'w+')
 
+    with tf.Session(config=tf_config) as sess:
+        sess_start = time.time()
+        datetime_str = datetime.datetime.now().strftime("%Y-%m-%d-%H:%M:%S")
+        data_log = open('logs/'+datetime_str+'_log.txt', 'w+')
 
         if load is not None:
             saver.restore(sess, load)
             logger.info('Model: '+load+' Restored')
-            env_learner.sess = sess
+            env_learner.initialize(sess, load=True)
 
+
+        # generic data gathering
         obs = env.reset()
-
 
         if load is None:
             env_learner.initialize(sess)
-            sess.graph.finalize()
-
-            # generic data gathering
+            # sess.graph.finalize()
             i = 0
             while i < train_episodes:
                 action = np.random.uniform(-1, 1, env.action_space.shape[0])
@@ -426,52 +602,33 @@ def test(env, epochs=100, train_episodes=100, test_episodes=100, loop='open', sh
             logger.info('Train Size: ' + str(len(train)))
             logger.info('Valid Size: ' + str(len(valid)))
 
+
             # Training self model
-            train_env_learner(env_learner, train, epochs, valid, logger, saver=saver, save_str=datetime_str)
+            env_learner.train(train, epochs, valid, logger, saver=saver, save_str=datetime_str)
             logger.info('Trained Self Model')
 
-
         # Testing in this env
-        failures, all_final_drifts, all_final_lens, all_final_pred_ds, all_final_real_ds = run_tests(test_episodes, env,
-                                                                                                     data_log,
-                                                                                                     env_learner,
-                                                                                                     max_action, loop)
+        failures, all_final_drifts, all_final_lens, all_final_pred_ds, all_final_real_ds = run_tests(test_episodes, env, data_log, env_learner, max_action, loop)
 
         import statistics
         num_bins = 10
-        print('Percent Failed: ' + str(100.0 * float(failures) / float(test_episodes)) + '%')
+        print('\nModel: \'models/' + str(datetime_str) + '.ckpt\'')
+        print('Percent Failed: '+str(100.0*float(failures)/float(test_episodes))+'%')
 
-        print('Mean Final Drift: ' + str(statistics.mean(all_final_drifts)))
-        print('Median Final Drift: ' + str(statistics.median(all_final_drifts)))
-        print('Stdev Final Drift: ' + str(statistics.stdev(all_final_drifts)))
+        print('Mean Final Drift: '+str(statistics.mean(all_final_drifts)))
+        print('Median Final Drift: '+str(statistics.median(all_final_drifts)))
+        print('Stdev Final Drift: '+str(statistics.stdev(all_final_drifts)))
 
-        print('Mean Episode Len: ' + str(statistics.mean(all_final_lens)))
-        print('Median Episode Len: ' + str(statistics.median(all_final_lens)))
-        print('Stdev Episode Len: ' + str(statistics.stdev(all_final_lens)))
+        print('Mean Episode Len: '+str(statistics.mean(all_final_lens)))
+        print('Median Episode Len: '+str(statistics.median(all_final_lens)))
+        print('Stdev Episode Len: '+str(statistics.stdev(all_final_lens)))
 
-        print('Mean Final Pred D: ' + str(statistics.mean(all_final_pred_ds)))
-        print('Median Final Pred D: ' + str(statistics.median(all_final_pred_ds)))
-        print('Stdev Final Pred D: ' + str(statistics.stdev(all_final_pred_ds)))
+        print('Mean Final Pred D: '+str(statistics.mean(all_final_pred_ds)))
+        print('Median Final Pred D: '+str(statistics.median(all_final_pred_ds)))
+        print('Stdev Final Pred D: '+str(statistics.stdev(all_final_pred_ds)))
 
-        print('Mean Final Real D: ' + str(statistics.mean(all_final_real_ds)))
-        print('Median Final Real D: ' + str(statistics.median(all_final_real_ds)))
-        print('Stdev Final Real D: ' + str(statistics.stdev(all_final_real_ds)))
+        print('Mean Final Real D: '+str(statistics.mean(all_final_real_ds)))
+        print('Median Final Real D: '+str(statistics.median(all_final_real_ds)))
+        print('Stdev Final Real D: '+str(statistics.stdev(all_final_real_ds)))
 
-        _, _, _ = plt.hist(all_final_drifts, num_bins, facecolor='blue', alpha=0.5)
-        plt.title('Final Drifts')
-        plt.savefig(datetime_str + '_final_drift')
-        plt.clf()
-        _, _, _ = plt.hist(all_final_lens, num_bins, facecolor='blue', alpha=0.5)
-        plt.title('Episode Lengths')
-        plt.savefig(datetime_str + '_final_lens')
-        plt.clf()
-        _, _, _ = plt.hist(all_final_pred_ds, num_bins, facecolor='blue', alpha=0.5)
-        plt.title('Final Predicted Distances')
-        plt.savefig(datetime_str + '_final_pred_ds')
-        plt.clf()
-        _, _, _ = plt.hist(all_final_real_ds, num_bins, facecolor='blue', alpha=0.5)
-        plt.title('Final Real Distances')
-        plt.savefig(datetime_str + '_final_real_ds')
-        plt.clf()
-
-
+        print('\nCompleted In: '+str(time.time()-sess_start)+' s')

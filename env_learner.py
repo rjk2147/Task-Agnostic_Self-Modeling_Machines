@@ -19,6 +19,9 @@ class EnvLearner:
         self.act_dim = env_in.action_space.shape[0]
         self.state_dim = env_in.observation_space.shape[0]
 
+        self.action_space = env_in.action_space
+        self.observation_space = env_in.observation_space
+
         if model == 'knn':
             self.model_type = model
             self.knn = neighbors.KNeighborsRegressor(5, weights='distance')
@@ -174,7 +177,7 @@ class EnvLearner:
             # self.train_step_gen = tf.train.AdamOptimizer(lr_gen).minimize(self.gen_loss, var_list=var_g)
 
             """ WGAN-GP """
-            self.n_d = 1
+            self.n_d = 5
             epsilon = 0.01
             gp_lambda = 10
 

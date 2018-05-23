@@ -45,7 +45,7 @@ def parse_args():
     parser.add_argument('--env', type=str, default='AntBulletEnv-v0')
     parser.add_argument('--loop', type=str, default='open')
     parser.add_argument('--nb-epochs', type=int, default=100)
-    parser.add_argument('--nb-train-episodes', type=int, default=200)
+    parser.add_argument('--nb-train-episodes', type=int, default=100)
     parser.add_argument('--nb-test-episodes', type=int, default=100)
     parser.add_argument('--show-model', dest='show_model', action='store_true')
     parser.add_argument('--load', type=str, default=None)
