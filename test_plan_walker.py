@@ -13,11 +13,12 @@ from gym import spaces
 class AntWrapper(gym.Env):
     def __init__(self, ant_env):
         self.env = ant_env
+        self.env.seed(0)
+        # self.env.render()
         self.action_space = self.env.action_space
         obs_ones = np.ones(shape=(self.env.observation_space.shape[0],))
         self.observation_space = spaces.Box(high=5*obs_ones, low=-5*obs_ones)
         pass
-
     def reset(self):
         return self.env.reset()
     def step(self, action):
@@ -556,7 +557,9 @@ def test(env, epochs=100, train_episodes=10, test_episodes=100, loop='open', sho
     episode_step = 0
     episode_reward = 0.0
     max_ep_rew = -10000
-    train = []
+
+    nb_ciric = 10
+    train = [[]]*nb_ciric
     valid = []
 
     with tf.Session(config=tf_config) as sess:
@@ -608,64 +611,68 @@ def test(env, epochs=100, train_episodes=10, test_episodes=100, loop='open', sho
         if load is None:
             env_learner.initialize(sess)
             # sess.graph.finalize()
-            i = 0
 
             batch_size = 1
+            for ciric_i in range(nb_ciric):
+                i = 0
+                print(ciric_i)
+                while i < train_episodes/(nb_ciric*batch_size):
+                    avg_rew = 0.0
+                    avg_i = 0
+                    while avg_i < batch_size:
 
-            while i < train_episodes/batch_size:
-                avg_rew = 0.0
-                avg_i = 0
-                while avg_i < batch_size:
-
-                    # Below needed for GCP
-                    # joints = env.action_space.shape[0]
-                    # action = np.zeros(joints)
-                    # for j in range(joints):
-                    #     action[j] = amplitude*math.sin(2*math.pi*0.0165*episode_step+offset)
-
-                    # Use uniform for training data generation
-                    action = np.random.uniform(-1, 1, env.action_space.shape[0])
-
-
-                    # action = np.zeros(env.action_space.shape[0])
-                    # action = find_next_move(env, env_learner, obs, max_action, episode_step)
-                    new_obs, r, done, info = env.step(max_action * action)
-                    # env.render()
-                    if episode_duration > 0:
-                        done = (done or (episode_step >= episode_duration))
-
-
-                    train.append([obs, max_action * action, r, new_obs, done, episode_step])
-                    episode_step += 1
-                    obs = new_obs
-                    # print(obs)
-
-                    vx = new_obs[3]
-                    rew = vx
-                    episode_reward += rew
-                    if done:
+                        # Below needed for GCP
                         # joints = env.action_space.shape[0]
                         # action = np.zeros(joints)
-                        # for i in range(joints):
-                        #     action[i] = amplitude*math.sin(2*math.pi*0.0165*episode_step+offset)
-                        # print(obs)
-                        # print('Episode '+str(i))
-                        avg_rew += episode_reward
-                        episode_step = 0.0
-                        obs = env.reset()
-                        max_ep_rew = max(max_ep_rew, episode_reward)
-                        episode_reward = 0.0
-                        avg_i += 1
-                i += 1
-                avg_rew = float(avg_rew)/float(batch_size)
-                if avg_rew > best_rew:
-                    best_rew = avg_rew
-                    best_amp = amplitude
-                    best_off = offset
-                amplitude = best_amp + np.random.normal(0, amp_std)
-                offset = best_off + np.random.normal(0, off_std)
+                        # for j in range(joints):
+                        #     action[j] = amplitude*math.sin(2*math.pi*0.0165*episode_step+offset)
 
-                # print('Train Batch: '+str(i)+': '+str(avg_rew)+' Max: '+str(best_rew))
+                        # Use uniform for training data generation
+
+                        act_range = float(1+ciric_i)/float(nb_ciric)
+
+                        action = np.random.uniform(-act_range, act_range, env.action_space.shape[0])
+
+
+                        # action = np.zeros(env.action_space.shape[0])
+                        # action = find_next_move(env, env_learner, obs, max_action, episode_step)
+                        new_obs, r, done, info = env.step(max_action * action)
+                        # env.render()
+                        if episode_duration > 0:
+                            done = (done or (episode_step >= episode_duration))
+
+
+                        train[ciric_i].append([obs, max_action * action, r, new_obs, done, episode_step])
+                        episode_step += 1
+                        obs = new_obs
+                        # print(obs)
+
+                        vx = new_obs[3]
+                        rew = vx
+                        episode_reward += rew
+                        if done:
+                            # joints = env.action_space.shape[0]
+                            # action = np.zeros(joints)
+                            # for i in range(joints):
+                            #     action[i] = amplitude*math.sin(2*math.pi*0.0165*episode_step+offset)
+                            # print(obs)
+                            # print('Episode '+str(i))
+                            avg_rew += episode_reward
+                            episode_step = 0.0
+                            obs = env.reset()
+                            max_ep_rew = max(max_ep_rew, episode_reward)
+                            episode_reward = 0.0
+                            avg_i += 1
+                    i += 1
+                    avg_rew = float(avg_rew)/float(batch_size)
+                    if avg_rew > best_rew:
+                        best_rew = avg_rew
+                        best_amp = amplitude
+                        best_off = offset
+                    amplitude = best_amp + np.random.normal(0, amp_std)
+                    offset = best_off + np.random.normal(0, off_std)
+
+                    # print('Train Batch: '+str(i)+': '+str(avg_rew)+' Max: '+str(best_rew))
 
             i = 0
             amplitude = best_amp
@@ -715,12 +722,14 @@ def test(env, epochs=100, train_episodes=10, test_episodes=100, loop='open', sho
             # print('Best Amplitude: '+str(amplitude))
             # print('Best Offset: '+str(offset))
             logger.info('Data gathered')
-            logger.info('Train Size: ' + str(len(train)))
+            tl = sum([len(batch) for batch in train])
+            logger.info('Train Size: ' + str(tl))
             logger.info('Valid Size: ' + str(len(valid)))
 
             # return
             # Training self model
-            env_learner.train(train, epochs, valid, logger, saver=saver, save_str=datetime_str)
+            for ciric_i in range(nb_ciric):
+                env_learner.train(train[ciric_i], epochs, valid, logger, saver=saver, save_str=datetime_str)
             logger.info('Trained Self Model')
         # Testing in this env
         run_tests(test_episodes, env, env_learner, loop)

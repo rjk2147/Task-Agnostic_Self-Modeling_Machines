@@ -95,7 +95,7 @@ class EnvLearner:
             # Initialization
             self.buff_len = 5
             self.seq_len = 1
-            self.max_seq_len = 10
+            self.max_seq_len = 5
             self.last_r = np.array([0.0]).flatten()
             self.buff_init = [np.zeros(self.state_dim+self.act_dim)]
             self.seq_init = [np.zeros(self.act_dim)]
@@ -192,8 +192,8 @@ class EnvLearner:
             for layer in grad_list:
                 GP += gp_lambda * (tf.sqrt(tf.reduce_sum(tf.square(layer))) - 1) ** 2
             self.disc_loss += GP
-            self.train_step_disc = tf.train.AdamOptimizer(lr_disc).minimize(self.disc_loss, var_list=var_d)
-            self.train_step_gen = tf.train.AdamOptimizer(lr_gen).minimize(self.gen_loss, var_list=var_g)
+            self.train_step_disc = tf.train.AdamOptimizer(lr_disc, beta1=0, beta2=0.9).minimize(self.disc_loss, var_list=var_d)
+            self.train_step_gen = tf.train.AdamOptimizer(lr_gen, beta1=0, beta2=0.9).minimize(self.gen_loss, var_list=var_g)
 
     def init_gan_losses(self):
 
@@ -281,7 +281,7 @@ class EnvLearner:
             data = data[batch_size:]
         return batches
 
-    def __prep_data__(self, data, batch_size=32):
+    def __prep_data__(self, data, batch_size=64):
         G = []
         X = []
         A = []

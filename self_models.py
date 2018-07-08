@@ -1,12 +1,12 @@
 import tensorflow as tf
 
 def generator_model(x, out_dim, drop_rate=0.5):
-    # return generator_model_arm(x, out_dim, drop_rate)
-    return generator_model_walker(x, out_dim, drop_rate)
+    return generator_model_arm(x, out_dim, drop_rate)
+    # return generator_model_walker(x, out_dim, drop_rate)
 
 def discriminator_model(x, drop_rate=0.5):
-    # return discriminator_model_arm(x, drop_rate)
-    return discriminator_model_walker(x, drop_rate)
+    return discriminator_model_arm(x, drop_rate)
+    # return discriminator_model_walker(x, drop_rate)
 
 
 def generator_model_walker(x, out_dim, drop_rate=0.5):
@@ -124,6 +124,8 @@ def discriminator_model_walker(x, drop_rate=0.5):
         x = tf.layers.batch_normalization(x)
         x = tf.layers.dense(x, 1)
         # return x
+
+        # return tf.nn.leaky_relu(x)
         return tf.nn.sigmoid(x)
 
 def generator_model_arm(x, out_dim, drop_rate=0.5):
@@ -220,6 +222,7 @@ def discriminator_model_arm(x, drop_rate=0.5):
         x = tf.layers.batch_normalization(x)
         x = tf.layers.dense(x, 1)
         # return x
+        # return tf.nn.leaky_relu(x)
         return tf.nn.sigmoid(x)
 
 
