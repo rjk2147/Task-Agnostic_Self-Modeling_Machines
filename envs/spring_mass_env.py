@@ -1,10 +1,9 @@
 import gym
-from gym import spaces
-import numpy as np
-import math
-from spring_mass import *
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
+from gym import spaces
+
+from misc.spring_mass import *
+
 
 class SpringMass(gym.Env):
     def __init__(self):
@@ -172,6 +171,5 @@ class SpringMassCrawler(gym.Env):
         self.ax.set_zlim(0, maxX)
         plt.draw()
         plt.pause(0.5)
-        import time
         # time.sleep(100)
         # plt.savefig(str(self.i)+'.png')

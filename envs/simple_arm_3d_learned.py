@@ -1,10 +1,11 @@
-import gym
-from gym import spaces
-import numpy as np
-import tensorflow as tf
 import math
-from simple_arm_3d import SimpleArm as SimpleArmRaw
-from env_learner import EnvLearner
+
+import gym
+import numpy as np
+
+from env_learners.env_learner import EnvLearner
+from envs.simple_arm_3d import SimpleArm as SimpleArmRaw
+
 
 class SimpleArm(gym.Env):
     def __init__(self):

@@ -1,14 +1,14 @@
-import time, datetime, math
-from collections import deque
-import logger
+import datetime
+import math
+import time
+
+import gym
 import numpy as np
 import tensorflow as tf
-from mpi4py import MPI
-from matplotlib import pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-from env_learner import EnvLearner
-import gym
 from gym import spaces
+
+from misc import logger
+
 
 class AntWrapper(gym.Env):
     def __init__(self, ant_env):
@@ -527,12 +527,10 @@ def __rec_next_move__(action, depth, search_prec, new_top, new_bottom, env, env_
     return min_act, tmp_min_d
     # else: return __rec_next_move__(action, depth+1, search_prec, new_top, new_bottom, env, env_learner, max_action, dof, min_d, obs, episode_step, test)
 
-def test(env, epochs=100, train_episodes=10, test_episodes=100, loop='open', show_model=False, load=None):
+def test(env, env_learner, epochs=100, train_episodes=10, test_episodes=100, loop='open', show_model=False, load=None):
     assert (np.abs(env.action_space.low) == env.action_space.high).all()  # we assume symmetric actions.
     max_action = env.action_space.high
     logger.info('scaling actions by {} before executing in env'.format(max_action))
-    logger.info('Env Learner')
-    env_learner = EnvLearner(env)
     logger.info('Done Env Learner')
     logger.info('Using agent with the following configuration:')
     try:
@@ -569,7 +567,7 @@ def test(env, epochs=100, train_episodes=10, test_episodes=100, loop='open', sho
 
         if load is not None:
             saver.restore(sess, load)
-            logger.info('Model: '+load+' Restored')
+            logger.info('Model: ' + load + ' Restored')
             env_learner.initialize(sess, load=True)
 
 

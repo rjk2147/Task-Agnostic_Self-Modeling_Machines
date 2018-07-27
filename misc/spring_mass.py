@@ -1,5 +1,7 @@
-import numpy as np
 import math
+
+import numpy as np
+
 
 class Spring:
     def __init__(self, l=1, k=10000):
@@ -309,7 +311,8 @@ def GCP(env, train_episodes=1000, batch_size=1):
 if __name__ == '__main__':
     self_model = None
     loop = None
-    import spring_mass_env
+    from envs import spring_mass_env
+
     env = spring_mass_env.SpringMassCrawler()
 
     # plt.figure()

@@ -1,13 +1,13 @@
 import datetime
-from collections import deque
+import time
+
 import numpy as np
 import tensorflow as tf
-import logger
-from env_learner import EnvLearner
-from mpi4py import MPI
 from matplotlib import pyplot as plt
-import time, math
-from tqdm import tqdm
+
+from env_learners.env_learner import EnvLearner
+from misc import logger
+
 
 def walk_with_model(env, self_model, loop):
     def draw_compare(real_pos, pred_pos, env):
@@ -135,7 +135,7 @@ def test(env, epochs=100, train_episodes=10, test_episodes=100, loop='open', sho
 
         if load is not None:
             saver.restore(sess, load)
-            logger.info('Model: '+load+' Restored')
+            logger.info('Model: ' + load + ' Restored')
             env_learner.initialize(sess, load=True)
 
 
