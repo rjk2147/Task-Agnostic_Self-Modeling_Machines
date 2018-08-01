@@ -9,7 +9,7 @@ class KNNEnvLearner(EnvLearner):
         EnvLearner.__init__(self, env_in)
         self.knn = neighbors.KNeighborsRegressor(5, weights='distance')
 
-    def train(self, train, total_steps, valid=None, logger=None, log_interval=10, early_stopping=-1, saver=None, save_str=None):
+    def train(self, train, total_steps, valid=None,log_interval=10, early_stopping=-1, saver=None, save_str=None):
         X = []
         Y = []
         for (obs, action, r, new_obs, done, episode_step) in train:

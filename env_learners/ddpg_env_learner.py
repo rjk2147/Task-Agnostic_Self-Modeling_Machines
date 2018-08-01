@@ -61,7 +61,7 @@ class DDPGEnvLearner(EnvLearner):
             self.sess.run(tf.global_variables_initializer())
         self.agent.initialize(self.sess)
 
-    def train(self, train, total_steps, valid=None, logger=None, log_interval=10, early_stopping=-1, saver=None, save_str=None):
+    def train(self, train, total_steps, valid=None, log_interval=10, early_stopping=-1, saver=None, save_str=None):
         G, yS, yR, yD, X, S, A = self.__prep_data__(train, batch_size=0)
         X = X[0]
         S = S[0]

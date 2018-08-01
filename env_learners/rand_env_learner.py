@@ -16,7 +16,7 @@ class RandEnvLearner(EnvLearner):
         if not load:
             self.sess.run(tf.global_variables_initializer())
 
-    def train(self, train, total_steps, valid=None, logger=None, log_interval=10, early_stopping=-1, saver=None, save_str=None):
+    def train(self, train, total_steps, valid=None, log_interval=10, early_stopping=-1, saver=None, save_str=None):
         epoch_min_loss = 100000000
         G, yS, yR, yD, X, S, A = self.__prep_data__(train, 10000)
         # vars = [v for v in tf.trainable_variables()]

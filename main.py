@@ -7,7 +7,6 @@ import gym
 import tensorflow as tf
 
 import envs
-from misc import logger
 
 
 def run(**kwargs):
@@ -40,15 +39,18 @@ def run(**kwargs):
         from envs.spring_mass_env import SpringMassCrawler
         env = SpringMassCrawler()
         from test_planners import test_spring_mass as testing
+    elif kwargs['env'] == 'widowx_arm':
+        print('Environment \'widowx_arm\' chosen')
+        from envs.widowx_arm import WidowxROS
+        env = WidowxROS()
+        from test_planners import test_plan_widowx as testing
     else:
         print('No valid environment chosen')
         print('Defaulting to simple_arm_3d')
         from envs.simple_arm_3d import SimpleArm
         env = SimpleArm(train=True)
         from test_planners import test_plan_3d as testing
-    gym.logger.setLevel(logging.WARN)
 
-    logger.info('logdir={}'.format(logger.get_dir()))
     tf.reset_default_graph()
 
     if kwargs['arch'] == 'knn':
@@ -86,16 +88,15 @@ def run(**kwargs):
     testing.test(env=env, env_learner=env_learner, epochs=kwargs['nb_epochs'], train_episodes=kwargs['nb_train_episodes'], load=kwargs['load'],
                  test_episodes=kwargs['nb_test_episodes'], loop=kwargs['loop'], show_model=kwargs['show_model'])
     env.close()
-    logger.info('total runtime: {}s'.format(time.time() - start_time))
 
 
 def parse_args():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--env', type=str, default='simple_arm_3d')
-    parser.add_argument('--arch', type=str, default='ppo')
+    parser.add_argument('--env', type=str, default='widowx_arm')
+    parser.add_argument('--arch', type=str, default='gan')
     parser.add_argument('--loop', type=str, default='open')
     parser.add_argument('--nb-epochs', type=int, default=100)
-    parser.add_argument('--nb-train-episodes', type=int, default=10)
+    parser.add_argument('--nb-train-episodes', type=int, default=1000)
     parser.add_argument('--nb-test-episodes', type=int, default=100)
     parser.add_argument('--show-model', dest='show_model', action='store_true')
     parser.add_argument('--load', type=str, default=None)
@@ -107,6 +108,5 @@ def parse_args():
 
 if __name__ == '__main__':
     args = parse_args()
-    logger.configure()
     # Run actual script.
     run(**args)

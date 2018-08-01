@@ -8,13 +8,11 @@ from matplotlib import pyplot as plt
 
 import pickle
 
-from misc import logger
-
 
 def run_tests(test_episodes, env, data_log, env_learner, max_action, loop):
     episode_step = 0
-    last_d = env.d
-    d = last_d
+    # last_d = env.d
+    # d = last_d
     acts = []
     all_final_drifts = []
     all_final_lens = []
@@ -36,49 +34,9 @@ def run_tests(test_episodes, env, data_log, env_learner, max_action, loop):
         data_log.write('Drift: ' + str(0.0) + '\n')
         start_pos = [obs[-3], obs[-2], obs[-1]]
 
-        real_Xs = []
-        real_Ys = []
-        real_Zs = []
-        pred_Xs = []
-        pred_Ys = []
-        pred_Zs = []
-
-        real_elbow_Xs = []
-        real_elbow_Ys = []
-        real_elbow_Zs = []
-        pred_elbow_Xs = []
-        pred_elbow_Ys = []
-        pred_elbow_Zs = []
-
         pred_ds = []
         real_ds = []
         drifts = []
-        real_Xs.append(obs[-3])
-        real_Ys.append(obs[-2])
-        real_Zs.append(obs[-1])
-        pred_Xs.append(obs[-3])
-        pred_Ys.append(obs[-2])
-        pred_Zs.append(obs[-1])
-
-        real_elbow_X = [0]
-        real_elbow_Y = [0]
-        real_elbow_Z = [0]
-        pred_elbow_X = [0]
-        pred_elbow_Y = [0]
-        pred_elbow_Z = [0]
-        for j in range(len(env.r) - 1):
-            real_elbow_X.append(float(env.r[j] * math.cos(obs[2 * j]) * math.sin(obs[2 * j + 1])))
-            real_elbow_Y.append(float(env.r[j] * math.sin(obs[2 * j]) * math.sin(obs[2 * j + 1])))
-            real_elbow_Z.append(float(env.r[j] * math.cos(obs[2 * j + 1])))
-            pred_elbow_X.append(float(env.r[j] * math.cos(obs[2 * j] * math.sin(obs[2 * j + 1]))))
-            pred_elbow_Y.append(float(env.r[j] * math.sin(obs[2 * j]) * math.sin(obs[2 * j + 1])))
-            pred_elbow_Z.append(float(env.r[j] * math.cos(obs[2 * j + 1])))
-        real_elbow_Xs.append(real_elbow_X)
-        real_elbow_Ys.append(real_elbow_Y)
-        real_elbow_Zs.append(real_elbow_Z)
-        pred_elbow_Xs.append(pred_elbow_X)
-        pred_elbow_Ys.append(pred_elbow_Y)
-        pred_elbow_Zs.append(pred_elbow_Z)
 
         pred_ds.append(init_d)
         real_ds.append(init_d)
@@ -86,7 +44,6 @@ def run_tests(test_episodes, env, data_log, env_learner, max_action, loop):
 
         while not done:
             action = find_next_move_test(env, env_learner, obs, max_action, episode_step, dof=4)
-            # action = find_next_move_train(env, env_learner, obs, max_action, episode_step, dof=4)
             new_obs = env_learner.step(obs, max_action * action, episode_step, save=True)
             real_obs, r, real_done, _ = env.step(max_action * action)
 
@@ -104,38 +61,6 @@ def run_tests(test_episodes, env, data_log, env_learner, max_action, loop):
             data_log.write('Real D: ' + str(real_d) + '\n')
             data_log.write('Drift: ' + str(drift) + '\n')
 
-            # print('Action '+str(episode_step)+': '+str(action)+'\n')
-            # print('Pred D: '+str(d)+'\n')
-            # print('Real D: '+str(real_d)+'\n')
-            # print('Drift: '+str(drift)+'\n')
-
-            real_Xs.append(real_obs[-3])
-            real_Ys.append(real_obs[-2])
-            real_Zs.append(real_obs[-1])
-            pred_Xs.append(new_obs[-3])
-            pred_Ys.append(new_obs[-2])
-            pred_Zs.append(new_obs[-1])
-
-            real_elbow_X = [0]
-            real_elbow_Y = [0]
-            real_elbow_Z = [0]
-            pred_elbow_X = [0]
-            pred_elbow_Y = [0]
-            pred_elbow_Z = [0]
-            for j in range(len(env.r) - 1):
-                real_elbow_X.append(float(env.r[j] * math.cos(real_obs[2 * j]) * math.sin(real_obs[2 * j + 1])))
-                real_elbow_Y.append(float(env.r[j] * math.sin(real_obs[2 * j]) * math.sin(real_obs[2 * j + 1])))
-                real_elbow_Z.append(float(env.r[j] * math.cos(real_obs[2 * j + 1])))
-                pred_elbow_X.append(float(env.r[j] * math.cos(new_obs[2 * j] * math.sin(new_obs[2 * j + 1]))))
-                pred_elbow_Y.append(float(env.r[j] * math.sin(new_obs[2 * j]) * math.sin(new_obs[2 * j + 1])))
-                pred_elbow_Z.append(float(env.r[j] * math.cos(new_obs[2 * j + 1])))
-            real_elbow_Xs.append(real_elbow_X)
-            real_elbow_Ys.append(real_elbow_Y)
-            real_elbow_Zs.append(real_elbow_Z)
-            pred_elbow_Xs.append(pred_elbow_X)
-            pred_elbow_Ys.append(pred_elbow_Y)
-            pred_elbow_Zs.append(pred_elbow_Z)
-
             pred_ds.append(d)
             real_ds.append(real_d)
             drifts.append(drift)
@@ -144,7 +69,6 @@ def run_tests(test_episodes, env, data_log, env_learner, max_action, loop):
                 obs = new_obs
             elif loop == 'closed':
                 obs = real_obs
-                # d = real_d
             else:
                 obs = new_obs
 
@@ -202,8 +126,8 @@ def hill_climb(act_dim, env, env_learner, obs, max_action, episode_step, is_test
             for j in range(5):
                 last_pt = current_point[i]
                 current_point[i] = current_point[i] + step_size[i] * candidate[j]
-                current_point[i] = max(current_point[i], -1)
-                current_point[i] = min(current_point[i], 1)
+                current_point[i] = max(current_point[i], -0.9)
+                current_point[i] = min(current_point[i], 0.9)
 
                 temp = evaluate(current_point, env_learner, obs, max_action, env, episode_step, test=is_test)
                 current_point[i] = last_pt
@@ -214,6 +138,8 @@ def hill_climb(act_dim, env, env_learner, obs, max_action, episode_step, is_test
                 step_size[i] = step_size[i] / acc
             else:
                 current_point[i] = current_point[i] + step_size[i] * candidate[best]
+                # current_point[i] = max(current_point[i], -1)
+                # current_point[i] = min(current_point[i], 1)
                 step_size[i] = step_size[i] * candidate[best] # accelerate
         if (evaluate(current_point, env_learner, obs, max_action, env, episode_step, test=is_test) - before) < epsilon:
             return current_point
@@ -265,11 +191,11 @@ def __rec_next_move__(action, depth, search_prec, new_top, new_bottom, env, env_
 def test(env, env_learner, epochs=100, train_episodes=10, test_episodes=100, loop='open', show_model=False, load=None):
     assert (np.abs(env.action_space.low) == env.action_space.high).all()  # we assume symmetric actions.
     max_action = env.action_space.high
-    logger.info('scaling actions by {} before executing in env'.format(max_action))
-    logger.info('Env Learner')
+    print('scaling actions by {} before executing in env'.format(max_action))
+    print('Env Learner')
 
-    logger.info('Done Env Learner')
-    logger.info('Using agent with the following configuration:')
+    print('Done Env Learner')
+    print('Using agent with the following configuration:')
     try:
         saver = tf.train.Saver()
     except:
@@ -292,8 +218,7 @@ def test(env, env_learner, epochs=100, train_episodes=10, test_episodes=100, loo
     episode_step = 0
     episode_reward = 0.0
     max_ep_rew = -10000
-    train = []
-    valid = []
+    valid = None
 
     with tf.Session(config=tf_config) as sess:
         sess_start = time.time()
@@ -302,20 +227,33 @@ def test(env, env_learner, epochs=100, train_episodes=10, test_episodes=100, loo
 
         if load is not None:
             saver.restore(sess, load)
-            logger.info('Model: ' + load + ' Restored')
+            print('Model: ' + load + ' Restored')
             env_learner.initialize(sess, load=True)
 
 
         # generic data gathering
-        obs = env.reset()
 
         if load is None:
             env_learner.initialize(sess)
-            train = pickle.load(train, open('widowx_train.pkl', 'rb+'))
+            # Encoding for python2 compatability as the ros data was in python2
+            # TODO migrate ROS interface to python3
+            # train = pickle.load(open('widowx_train_1M.pkl', 'rb+'), encoding='latin1')
+            # train = pickle.load(open('widowx_train_1M.pkl', 'rb+'), encoding='latin1')
 
-            # Training self model
-            env_learner.train(train, epochs, valid, logger, saver=saver, save_str=datetime_str)
-            logger.info('Trained Self Model')
+            # data_files = ['widowx_train_100K_1e-2.pkl',
+            #               'widowx_train_100K_5e-2.pkl',
+            #               'widowx_train_100K_1e-1.pkl',
+            #               'widowx_train_100K_5e-1.pkl',
+            #               'widowx_train_100K.pkl']
+            data_files = ['widowx_train_100K.pkl']
+            for data_file in data_files:
+                train = pickle.load(open(data_file, 'rb+'))
+                if test_episodes < 1000:
+                    train = train[:(train_episodes*100)]
+                # Training self model
+                print('Training on '+str(len(train))+' data points')
+                env_learner.train(train, epochs, valid, saver=saver, save_str=datetime_str)
+                print('Trained Self Model on data: '+str(data_file))
 
         # Testing in this env
         failures, all_final_drifts, all_final_lens, all_final_pred_ds, all_final_real_ds = run_tests(test_episodes, env, data_log, env_learner, max_action, loop)
@@ -343,21 +281,24 @@ def test(env, env_learner, epochs=100, train_episodes=10, test_episodes=100, loo
 
         print('\nCompleted In: '+str(time.time()-sess_start)+' s')
 
-        _, _, _ = plt.hist(all_final_drifts, num_bins, facecolor='blue', alpha=0.5)
-        plt.title('Final Drifts')
-        plt.savefig(datetime_str+'_final_drift')
-        plt.clf()
-        _, _, _ = plt.hist(all_final_lens, num_bins, facecolor='blue', alpha=0.5)
-        plt.title('Episode Lengths')
-        plt.savefig(datetime_str+'_final_lens')
-        plt.clf()
-        _, _, _ = plt.hist(all_final_pred_ds, num_bins, facecolor='blue', alpha=0.5)
-        plt.title('Final Predicted Distances')
-        plt.savefig(datetime_str+'_final_pred_ds')
-        plt.clf()
-        _, _, _ = plt.hist(all_final_real_ds, num_bins, facecolor='blue', alpha=0.5)
-        plt.title('Final Real Distances')
-        plt.savefig(datetime_str+'_final_real_ds')
-        plt.clf()
+        # _, _, _ = plt.hist(all_final_drifts, num_bins, facecolor='blue', alpha=0.5)
+        # plt.title('Final Drifts')
+        # # plt.savefig(datetime_str+'_final_drift')
+        # plt.clf()
+        # _, _, _ = plt.hist(all_final_lens, num_bins, facecolor='blue', alpha=0.5)
+        # plt.title('Episode Lengths')
+        # # plt.savefig(datetime_str+'_final_lens')
+        # plt.clf()
+        # _, _, _ = plt.hist(all_final_pred_ds, num_bins, facecolor='blue', alpha=0.5)
+        # plt.title('Final Predicted Distances')
+        # # plt.savefig(datetime_str+'_final_pred_ds')
+        # plt.clf()
+        # _, _, _ = plt.hist(all_final_real_ds, num_bins, facecolor='blue', alpha=0.5)
+        # plt.title('Final Real Distances')
+        # # plt.savefig(datetime_str+'_final_real_ds')
+        # plt.clf()
 
 
+
+# if __name__ == '__main__':
+#     args = parse_args()

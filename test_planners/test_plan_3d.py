@@ -6,8 +6,6 @@ import numpy as np
 import tensorflow as tf
 from matplotlib import pyplot as plt
 
-from misc import logger
-
 
 def run_tests(test_episodes, env, data_log, env_learner, max_action, loop):
     episode_step = 0
@@ -318,11 +316,11 @@ def __rec_next_move__(action, depth, search_prec, new_top, new_bottom, env, env_
 def test(env, env_learner, epochs=100, train_episodes=10, test_episodes=100, loop='open', show_model=False, load=None):
     assert (np.abs(env.action_space.low) == env.action_space.high).all()  # we assume symmetric actions.
     max_action = env.action_space.high
-    logger.info('scaling actions by {} before executing in env'.format(max_action))
-    logger.info('Env Learner')
+    print('scaling actions by {} before executing in env'.format(max_action))
+    print('Env Learner')
 
-    logger.info('Done Env Learner')
-    logger.info('Using agent with the following configuration:')
+    print('Done Env Learner')
+    print('Using agent with the following configuration:')
     try:
         saver = tf.train.Saver()
     except:
@@ -355,7 +353,7 @@ def test(env, env_learner, epochs=100, train_episodes=10, test_episodes=100, loo
 
         if load is not None:
             saver.restore(sess, load)
-            logger.info('Model: ' + load + ' Restored')
+            print('Model: ' + load + ' Restored')
             env_learner.initialize(sess, load=True)
 
 
@@ -402,14 +400,14 @@ def test(env, env_learner, epochs=100, train_episodes=10, test_episodes=100, loo
                     episode_reward = 0.0
                     i += 1
 
-            logger.info('Data gathered')
-            logger.info('Train Size: ' + str(len(train)))
-            logger.info('Valid Size: ' + str(len(valid)))
+            print('Data gathered')
+            print('Train Size: ' + str(len(train)))
+            print('Valid Size: ' + str(len(valid)))
 
 
             # Training self model
-            env_learner.train(train, epochs, valid, logger, saver=saver, save_str=datetime_str)
-            logger.info('Trained Self Model')
+            env_learner.train(train, epochs, valid, saver=saver, save_str=datetime_str)
+            print('Trained Self Model')
 
         # Testing in this env
         failures, all_final_drifts, all_final_lens, all_final_pred_ds, all_final_real_ds = run_tests(test_episodes, env, data_log, env_learner, max_action, loop)

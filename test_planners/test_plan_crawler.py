@@ -5,9 +5,6 @@ import time
 import numpy as np
 import tensorflow as tf
 
-from misc import logger
-
-
 def run_tests(test_episodes, env, data_log, env_learner, max_action, loop):
     episode_step = 0
     last_d = env.d
@@ -433,9 +430,9 @@ def walk_with_model(env, self_model, loop):
 def test(env, env_learner, epochs=100, train_episodes=10, test_episodes=100, loop='open', show_model=False, load=None):
     assert (np.abs(env.action_space.low) == env.action_space.high).all()  # we assume symmetric actions.
     max_action = env.action_space.high
-    logger.info('scaling actions by {} before executing in env'.format(max_action))
-    logger.info('Done Env Learner')
-    logger.info('Using agent with the following configuration:')
+    print('scaling actions by {} before executing in env'.format(max_action))
+    print('Done Env Learner')
+    print('Using agent with the following configuration:')
     try:
         saver = tf.train.Saver()
     except:
@@ -468,7 +465,7 @@ def test(env, env_learner, epochs=100, train_episodes=10, test_episodes=100, loo
 
         if load is not None:
             saver.restore(sess, load)
-            logger.info('Model: ' + load + ' Restored')
+            print('Model: ' + load + ' Restored')
             env_learner.initialize(sess, load=True)
 
 
@@ -515,14 +512,14 @@ def test(env, env_learner, epochs=100, train_episodes=10, test_episodes=100, loo
                     episode_reward = 0.0
                     i += 1
 
-            logger.info('Data gathered')
-            logger.info('Train Size: ' + str(len(train)))
-            logger.info('Valid Size: ' + str(len(valid)))
+            print('Data gathered')
+            print('Train Size: ' + str(len(train)))
+            print('Valid Size: ' + str(len(valid)))
 
 
             # Training self model
-            env_learner.train(train, epochs, valid, logger, saver=saver, save_str=datetime_str)
-            logger.info('Trained Self Model')
+            env_learner.train(train, epochs, valid, saver=saver, save_str=datetime_str)
+            print('Trained Self Model')
         else:
             walk_with_model(env, env_learner, loop)
 

@@ -5,7 +5,7 @@ import numpy as np
 import tensorflow as tf
 
 from env_learners.env_learner import EnvLearner
-from misc import losses, logger
+from misc import losses
 
 
 def encoder_mean(x, latent_size, drop_rate=0.5):
@@ -215,11 +215,11 @@ class VAEEnvLearner(EnvLearner):
         self.buffer = deque(self.buff_init * self.buff_len, maxlen=self.buff_len)
         dropout_rate = 0.5
         lr = 1e-5
-        logger.info('General Stats: ')
-        logger.info('Drop Rate: ' + str(dropout_rate))
-        logger.info('Buffer Len: ' + str(self.buff_len))
-        logger.info('vae_model:')
-        logger.info('Learning Rate: ' + str(lr))
+        print('General Stats: ')
+        print('Drop Rate: ' + str(dropout_rate))
+        print('Buffer Len: ' + str(self.buff_len))
+        print('vae_model:')
+        print('Learning Rate: ' + str(lr))
 
         """ State Prediction """
         self.x_seq = tf.placeholder(dtype=tf.float32, shape=([None, self.buff_init[0].size * self.buff_len]))
@@ -267,7 +267,7 @@ class VAEEnvLearner(EnvLearner):
         return Loss / len(X), 0,0
 
 
-    def train(self, train, total_steps, valid=None, logger=None, log_interval=10, early_stopping=-1, saver=None, save_str=None):
+    def train(self, train, total_steps, valid=None, log_interval=10, early_stopping=-1, saver=None, save_str=None):
         min_loss = 10000000000
         stop_count = 0
 
@@ -288,31 +288,31 @@ class VAEEnvLearner(EnvLearner):
                 seq_i += 1
                 print('Sequence Length: ' + str(self.seq_len))
 
-            if i % log_interval == 0 and i > 0 and logger is not None and valid is not None:
+            if i % log_interval == 0 and i > 0 and valid is not None:
                 (loss, _,_) = self.get_loss(valid)
-                logger.info('Epoch: ' + str(i) + '/' + str(total_steps))
-                logger.info('Train Loss: ' + str(loss))
-                logger.info()
+                print('Epoch: ' + str(i) + '/' + str(total_steps))
+                print('Train Loss: ' + str(loss))
+                print()
                 if saver is not None and save_str is not None:
                     save_path = saver.save(self.sess, 'models/' + str(save_str) + '.ckpt')
-                    logger.info("Model saved in path: %s" % save_path)
+                    print("Model saved in path: %s" % save_path)
             start = time.time()
             (loss, _, _) = self.train_epoch(train)
             duration = time.time() - start
             if stop_count > early_stopping and early_stopping > 0:
                 break
-            if i % log_interval != 0 and i > 0 and logger is not None:
-                logger.info('Epoch: ' + str(i) + '/' + str(total_steps) + ' in ' + str(duration) + 's')
-                logger.info('Valid Loss: ' + str(loss))
-                logger.info()
-        if logger is not None and valid is not None:
+            if i % log_interval != 0 and i > 0:
+                print('Epoch: ' + str(i) + '/' + str(total_steps) + ' in ' + str(duration) + 's')
+                print('Valid Loss: ' + str(loss))
+                print()
+        if valid is not None:
                 (loss, _,_) = self.get_loss(valid)
-                logger.info('Final Epoch')
-                logger.info('Valid Loss:' + str(loss))
-                logger.info()
+                print('Final Epoch')
+                print('Valid Loss:' + str(loss))
+                print()
         if saver is not None and save_str is not None:
             save_path = saver.save(self.sess, 'models/' + str(save_str) + '.ckpt')
-            logger.info("Final Model saved in path: %s" % save_path)
+            print("Final Model saved in path: %s" % save_path)
 
     def get_loss(self, data):
         G, yS, yR, yD, X, S, A = self.__prep_data__(data, self.buff_len)

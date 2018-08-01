@@ -29,7 +29,7 @@ class EnvLearner:
             data = data[batch_size:]
         return batches
 
-    def __prep_data__(self, data, batch_size=8):
+    def __prep_data__(self, data, batch_size=1):
         G = []
         X = []
         A = []
@@ -111,7 +111,7 @@ class EnvLearner:
             A = [A]
         return G, yS, yR, yD, X, S, A
 
-    def train(self, train, total_steps, valid=None, logger=None, log_interval=10, early_stopping=-1, saver=None, save_str=None):
+    def train(self, train, total_steps, valid=None, log_interval=10, early_stopping=-1, saver=None, save_str=None):
         pass
 
     def get_loss(self, data):

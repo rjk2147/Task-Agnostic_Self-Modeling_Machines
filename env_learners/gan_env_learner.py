@@ -6,8 +6,7 @@ import tensorflow as tf
 
 from misc import models
 from env_learners.env_learner import EnvLearner
-from misc import losses, logger
-
+from misc import losses
 
 class GANEnvLearner(EnvLearner):
     def __init__(self, env_in):
@@ -19,16 +18,16 @@ class GANEnvLearner(EnvLearner):
         self.last_r = np.array([0.0]).flatten()
         self.buffer = deque(self.buff_init * self.buff_len, maxlen=self.buff_len)
         dropout_rate = 0.5
-        lr_disc = 1e-5
-        lr_gen = 1e-5
-        logger.info('General Stats: ')
-        logger.info('Drop Rate: ' + str(dropout_rate))
-        logger.info('Buffer Len: ' + str(self.buff_len))
-        logger.info('Start Sequence Len: ' + str(self.seq_len))
-        logger.info('End Sequence Len: ' + str(self.max_seq_len))
-        logger.info('gan_model:')
-        logger.info('Learning Rate: ' + str(lr_disc))
-        logger.info('Learning Rate: ' + str(lr_gen))
+        self.lr_disc = 1e-5
+        self.lr_gen = 1e-5
+        print('General Stats: ')
+        print('Drop Rate: ' + str(dropout_rate))
+        print('Buffer Len: ' + str(self.buff_len))
+        print('Start Sequence Len: ' + str(self.seq_len))
+        print('End Sequence Len: ' + str(self.max_seq_len))
+        print('gan_model:')
+        print('Learning Rate: ' + str(self.lr_disc))
+        print('Learning Rate: ' + str(self.lr_gen))
 
         """ State Prediction """
         self.x_seq = tf.placeholder(dtype=tf.float32, shape=([None, self.buff_init[0].size * self.buff_len]))
@@ -66,7 +65,7 @@ class GANEnvLearner(EnvLearner):
 
         self.loss_state = self.loss_seq
 
-        self.train_step_state = tf.train.AdamOptimizer(lr_gen).minimize(self.loss_state)
+        self.train_step_state = tf.train.AdamOptimizer(self.lr_gen).minimize(self.loss_state)
 
         """ GAN Stuff """
         x_seq = []
@@ -82,9 +81,9 @@ class GANEnvLearner(EnvLearner):
         self.Dg = models.discriminator_model(g_in, drop_rate=dropout_rate)
         var_d = tf.trainable_variables('discriminator')
         var_g = tf.trainable_variables('generator')
-        g_lambda = 1.0
-        p_lambda = 10.0
-        t_lambda = 0.0
+        self.g_lambda = 1.0
+        self.p_lambda = 10.0
+        self.t_lambda = 0.0
 
         """ Vanilla GAN """
         # self.n_d = 1
@@ -96,22 +95,22 @@ class GANEnvLearner(EnvLearner):
 
         """ WGAN-GP """
         self.n_d = 5
-        epsilon = 0.01
-        gp_lambda = 10
+        self.epsilon = 0.01
+        self.gp_lambda = 10
 
         self.disc_loss = tf.reduce_mean(self.Dg) - tf.reduce_mean(self.Dx)
         self.g_loss = -tf.reduce_mean(self.Dg)
-        self.gen_loss =  g_lambda*self.g_loss + \
-                         p_lambda * self.loss_seq + \
-                         t_lambda * self.loss_last
-        x_hat = epsilon*self.Dx + (1-epsilon)*self.Dg
+        self.gen_loss =  self.g_lambda*self.g_loss + \
+                         self.p_lambda * self.loss_seq + \
+                         self.t_lambda * self.loss_last
+        x_hat = self.epsilon*self.Dx + (1-self.epsilon)*self.Dg
         grad_list = tf.gradients(x_hat, var_d)[2:]
         GP = 0.0
         for layer in grad_list:
-            GP += gp_lambda * (tf.sqrt(tf.reduce_sum(tf.square(layer))) - 1) ** 2
+            GP += self.gp_lambda * (tf.sqrt(tf.reduce_sum(tf.square(layer))) - 1) ** 2
         self.disc_loss += GP
-        self.train_step_disc = tf.train.AdamOptimizer(lr_disc, beta1=0, beta2=0.9).minimize(self.disc_loss, var_list=var_d)
-        self.train_step_gen = tf.train.AdamOptimizer(lr_gen, beta1=0, beta2=0.9).minimize(self.gen_loss, var_list=var_g)
+        self.train_step_disc = tf.train.AdamOptimizer(self.lr_disc, beta1=0, beta2=0.9).minimize(self.disc_loss, var_list=var_d)
+        self.train_step_gen = tf.train.AdamOptimizer(self.lr_gen, beta1=0, beta2=0.9).minimize(self.gen_loss, var_list=var_g)
 
     def initialize(self, session, load=False):
         self.sess = session
@@ -158,9 +157,6 @@ class GANEnvLearner(EnvLearner):
         self.g_in = g_seq
         var_d = tf.trainable_variables('discriminator')
         var_g = tf.trainable_variables('generator')
-        g_lambda = 1.0
-        p_lambda = 10.0
-        t_lambda = 0.0
 
         """ Vanilla GAN """
         # self.n_d = 1
@@ -171,26 +167,22 @@ class GANEnvLearner(EnvLearner):
         # self.train_step_gen = tf.train.AdamOptimizer(lr_gen).minimize(self.gen_loss, var_list=var_g)
 
         """ WGAN-GP """
-        self.n_d = 1
-        epsilon = 0.01
-        gp_lambda = 10
-
         self.disc_loss = tf.reduce_mean(self.Dg) - tf.reduce_mean(self.Dx)
         self.g_loss = -tf.reduce_mean(self.Dg)
-        self.gen_loss = g_lambda * self.g_loss + \
-                        p_lambda * self.loss_seq + \
-                        t_lambda * self.loss_last
-        x_hat = epsilon * self.Dx + (1 - epsilon) * self.Dg
+        self.gen_loss = self.g_lambda * self.g_loss + \
+                        self.p_lambda * self.loss_seq + \
+                        self.t_lambda * self.loss_last
+        x_hat = self.epsilon * self.Dx + (1 - self.epsilon) * self.Dg
         grad_list = tf.gradients(x_hat, var_d)[2:]
         GP = 0.0
         for layer in grad_list:
-            GP += gp_lambda * (tf.sqrt(tf.reduce_sum(tf.square(layer))) - 1) ** 2
+            GP += self.gp_lambda * (tf.sqrt(tf.reduce_sum(tf.square(layer))) - 1) ** 2
         self.disc_loss += GP
-        # self.train_step_disc = tf.train.AdamOptimizer(lr_disc).minimize(self.disc_loss, var_list=var_d)
-        # self.train_step_gen = tf.train.AdamOptimizer(lr_gen).minimize(self.gen_loss, var_list=var_g)
+        # self.train_step_disc = tf.train.AdamOptimizer(self.lr_disc).minimize(self.disc_loss, var_list=var_d)
+        # self.train_step_gen = tf.train.AdamOptimizer(self.lr_gen).minimize(self.gen_loss, var_list=var_g)
 
     def train_epoch(self, data):
-        G, yS, yR, yD, X, S, A = self.__prep_data__(data)
+        G, yS, yR, yD, X, S, A = self.__prep_data__(data, batch_size=32)
         n_d = self.n_d
         lGen = 0.0
         lDisc = 0.0
@@ -214,7 +206,7 @@ class GANEnvLearner(EnvLearner):
                 lC += ls
         return n_d * lGen / len(X), lDisc / len(X), n_d * lC / len(X)
 
-    def train(self, train, total_steps, valid=None, logger=None, log_interval=10, early_stopping=-1, saver=None, save_str=None):
+    def train(self, train, total_steps, valid=None, log_interval=10, early_stopping=-1, saver=None, save_str=None):
         min_loss = 10000000000
         stop_count = 0
 
@@ -238,20 +230,28 @@ class GANEnvLearner(EnvLearner):
                 self.init_gan_losses()
                 print('Sequence Length: ' + str(self.seq_len))
 
-            if i % log_interval == 0 and i > 0 and logger is not None and valid is not None:
-                (vGen, vDisc, vC) = self.get_loss(valid)
-                logger.info('Epoch: ' + str(i) + '/' + str(total_steps))
-                logger.info('Valid Loss')
-                logger.info('Gen:  ' + str(vGen))
-                logger.info('Disc: ' + str(vDisc))
-                logger.info('Close: ' + str(vC))
-                logger.info()
-                if saver is not None and save_str is not None:
-                    save_path = saver.save(self.sess, 'models/' + str(save_str) + '.ckpt')
-                    logger.info("Model saved in path: %s" % save_path)
             start = time.time()
             tlGen, tlDisc, tlC = self.train_epoch(train)
             duration = time.time() - start
+            if i % log_interval == 0 and i > 0:
+                if valid is not None:
+                    (vGen, vDisc, vC) = self.get_loss(valid)
+                    print('Epoch: ' + str(i) + '/' + str(total_steps))
+                    print('Valid Loss')
+                    print('Gen:  ' + str(vGen))
+                    print('Disc: ' + str(vDisc))
+                    print('Close: ' + str(vC))
+                    print('')
+                else:
+                    print('Epoch: ' + str(i) + '/' + str(total_steps) + ' in ' + str(duration) + 's')
+                    print('Train Loss')
+                    print('Gen:  ' + str(tlGen))
+                    print('Disc: ' + str(tlDisc))
+                    print('Close: ' + str(tlC))
+                    print('')
+                if saver is not None and save_str is not None:
+                    save_path = saver.save(self.sess, 'models/' + str(save_str) + '.ckpt')
+                    print("Model saved in path: %s" % save_path)
             if tlGen < min_loss:
                 min_loss = tlGen
                 stop_count = 0
@@ -259,24 +259,24 @@ class GANEnvLearner(EnvLearner):
                 stop_count += 1
             if stop_count > early_stopping and early_stopping > 0:
                 break
-            if i % log_interval != 0 and i > 0 and logger is not None:
-                logger.info('Epoch: ' + str(i) + '/' + str(total_steps) + ' in ' + str(duration) + 's')
-                logger.info('Train Loss')
-                logger.info('Gen:  ' + str(tlGen))
-                logger.info('Disc: ' + str(tlDisc))
-                logger.info('Close: ' + str(tlC))
-                logger.info()
-        if logger is not None and valid is not None:
+            if i % log_interval != 0 and i > 0:
+                print('Epoch: ' + str(i) + '/' + str(total_steps) + ' in ' + str(duration) + 's')
+                print('Train Loss')
+                print('Gen:  ' + str(tlGen))
+                print('Disc: ' + str(tlDisc))
+                print('Close: ' + str(tlC))
+                print('')
+        if valid is not None:
             (vGen, vDisc, vC) = self.get_loss(valid)
-            logger.info('Final Epoch: ')
-            logger.info('Valid Loss')
-            logger.info('Gen:  ' + str(vGen))
-            logger.info('Disc: ' + str(vDisc))
-            logger.info('Close: ' + str(vC))
-            logger.info()
+            print('Final Epoch: ')
+            print('Valid Loss')
+            print('Gen:  ' + str(vGen))
+            print('Disc: ' + str(vDisc))
+            print('Close: ' + str(vC))
+            print('')
         if saver is not None and save_str is not None:
             save_path = saver.save(self.sess, 'models/' + str(save_str) + '.ckpt')
-            logger.info("Final Model saved in path: %s" % save_path)
+            print("Final Model saved in path: %s" % save_path)
 
     def get_loss(self, data):
         G, yS, yR, yD, X, S, A = self.__prep_data__(data, self.buff_len)
@@ -308,6 +308,7 @@ class GANEnvLearner(EnvLearner):
         return lGen / len(X), lDisc / len(X), lC / len(X)
 
     def step(self, obs_in, action_in, episode_step, save=True, buff=None):
+        import copy
         obs = obs_in/self.state_mul_const
         action = action_in/self.act_mul_const
         if save:
@@ -316,7 +317,7 @@ class GANEnvLearner(EnvLearner):
             self.buffer.append(np.array([np.concatenate([obs, action])]).flatten())
         else:
             if buff is None:
-                buff = self.buffer.copy()
+                buff = copy.copy(self.buffer)
             if episode_step == 0:
                 buff = deque(self.buff_init * self.buff_len, maxlen=self.buff_len)
             buff.append(np.array([np.concatenate([obs, action])]).flatten())

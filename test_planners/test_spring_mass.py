@@ -6,7 +6,6 @@ import tensorflow as tf
 from matplotlib import pyplot as plt
 
 from env_learners.env_learner import EnvLearner
-from misc import logger
 
 
 def walk_with_model(env, self_model, loop):
@@ -98,11 +97,11 @@ def walk_with_model(env, self_model, loop):
 def test(env, epochs=100, train_episodes=10, test_episodes=100, loop='open', show_model=False, load=None):
     assert (np.abs(env.action_space.low) == env.action_space.high).all()  # we assume symmetric actions.
     max_action = env.action_space.high
-    logger.info('scaling actions by {} before executing in env'.format(max_action))
-    logger.info('Env Learner')
+    print('scaling actions by {} before executing in env'.format(max_action))
+    print('Env Learner')
     env_learner = EnvLearner(env)
-    logger.info('Done Env Learner')
-    logger.info('Using agent with the following configuration:')
+    print('Done Env Learner')
+    print('Using agent with the following configuration:')
     try:
         saver = tf.train.Saver()
     except:
@@ -135,7 +134,7 @@ def test(env, epochs=100, train_episodes=10, test_episodes=100, loop='open', sho
 
         if load is not None:
             saver.restore(sess, load)
-            logger.info('Model: ' + load + ' Restored')
+            print('Model: ' + load + ' Restored')
             env_learner.initialize(sess, load=True)
 
 
@@ -190,14 +189,14 @@ def test(env, epochs=100, train_episodes=10, test_episodes=100, loop='open', sho
                     i += 1
             sys.stdout.write('Validation Data Generated\r\n')
 
-            logger.info('All Data gathered')
-            logger.info('Training set Size: ' + str(len(train)))
-            logger.info('Validation set Size: ' + str(len(valid)))
+            print('All Data gathered')
+            print('Training set Size: ' + str(len(train)))
+            print('Validation set Size: ' + str(len(valid)))
 
 
             # Training self model
-            env_learner.train(train, epochs, valid, logger, saver=saver, save_str=datetime_str)
-            logger.info('Trained Self Model')
+            env_learner.train(train, epochs, valid, saver=saver, save_str=datetime_str)
+            print('Trained Self Model')
         else:
             walk_with_model(env, env_learner, loop)
 

@@ -7,8 +7,6 @@ import numpy as np
 import tensorflow as tf
 from gym import spaces
 
-from misc import logger
-
 
 class AntWrapper(gym.Env):
     def __init__(self, ant_env):
@@ -175,9 +173,9 @@ def run_tests(test_episodes, env, env_learner, loop='open'):
     print('Valid Avg: '+str(avg_rew))
     print('Best Amplitude: '+str(amplitude))
     print('Best Offset: '+str(offset))
-    logger.info('Data gathered')
-    # logger.info('Train Size: ' + str(len(train)))
-    # logger.info('Valid Size: ' + str(len(valid)))
+    print('Data gathered')
+    # print('Train Size: ' + str(len(train)))
+    # print('Valid Size: ' + str(len(valid)))
 
 #
 # def run_tests(test_episodes, env, data_log, env_learner, max_action, loop):
@@ -530,9 +528,9 @@ def __rec_next_move__(action, depth, search_prec, new_top, new_bottom, env, env_
 def test(env, env_learner, epochs=100, train_episodes=10, test_episodes=100, loop='open', show_model=False, load=None):
     assert (np.abs(env.action_space.low) == env.action_space.high).all()  # we assume symmetric actions.
     max_action = env.action_space.high
-    logger.info('scaling actions by {} before executing in env'.format(max_action))
-    logger.info('Done Env Learner')
-    logger.info('Using agent with the following configuration:')
+    print('scaling actions by {} before executing in env'.format(max_action))
+    print('Done Env Learner')
+    print('Using agent with the following configuration:')
     try:
         saver = tf.train.Saver()
     except:
@@ -567,7 +565,7 @@ def test(env, env_learner, epochs=100, train_episodes=10, test_episodes=100, loo
 
         if load is not None:
             saver.restore(sess, load)
-            logger.info('Model: ' + load + ' Restored')
+            print('Model: ' + load + ' Restored')
             env_learner.initialize(sess, load=True)
 
 
@@ -719,16 +717,16 @@ def test(env, env_learner, epochs=100, train_episodes=10, test_episodes=100, loo
             # print('Valid Avg: '+str(avg_rew))
             # print('Best Amplitude: '+str(amplitude))
             # print('Best Offset: '+str(offset))
-            logger.info('Data gathered')
+            print('Data gathered')
             tl = sum([len(batch) for batch in train])
-            logger.info('Train Size: ' + str(tl))
-            logger.info('Valid Size: ' + str(len(valid)))
+            print('Train Size: ' + str(tl))
+            print('Valid Size: ' + str(len(valid)))
 
             # return
             # Training self model
             for ciric_i in range(nb_ciric):
-                env_learner.train(train[ciric_i], epochs, valid, logger, saver=saver, save_str=datetime_str)
-            logger.info('Trained Self Model')
+                env_learner.train(train[ciric_i], epochs, valid, saver=saver, save_str=datetime_str)
+            print('Trained Self Model')
         # Testing in this env
         run_tests(test_episodes, env, env_learner, loop)
 

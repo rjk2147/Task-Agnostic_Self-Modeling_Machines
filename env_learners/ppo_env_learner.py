@@ -19,7 +19,7 @@ class PPOEnvLearner(EnvLearner):
         if not load:
             self.sess.run(tf.global_variables_initializer())
 
-    def train(self, train, total_steps, valid=None, logger=None, log_interval=10, early_stopping=-1, saver=None, save_str=None):
+    def train(self, train, total_steps, valid=None, log_interval=10, early_stopping=-1, saver=None, save_str=None):
         G, yS, yR, yD, X, S, A = self.__prep_data__(train, batch_size=0)
         self.env.load(train, G[0], yS[0], yR[0], yD[0], X[0], S[0], A[0])
         def policy_fn(name, ob_space, ac_space):
