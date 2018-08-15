@@ -47,7 +47,7 @@ class EnvLearnerEnv(gym.Env):
         #                                 action_in/self.act_mul_const])]).flatten()
         done = self.data[self.i][4]
         r = -np.linalg.norm(new_obs_in / self.state_mul_const - action) / action.shape[0]
-        if self.i < len(self.X):
+        if self.i < len(self.X)-1:
             new_obs = self.X[self.i+1]
         else:
             new_obs = np.zeros_like(self.X[self.i])

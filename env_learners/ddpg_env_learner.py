@@ -151,6 +151,7 @@ class DDPGEnvLearner(EnvLearner):
 
 
     def step(self, obs_in, action_in, episode_step, save=True, buff=None):
+        import copy
         obs = obs_in/self.state_mul_const
         action = action_in/self.act_mul_const
         if save:
@@ -159,7 +160,7 @@ class DDPGEnvLearner(EnvLearner):
             self.buffer.append(np.array([np.concatenate([obs, action])]).flatten())
         else:
             if buff is None:
-                buff = self.buffer.copy()
+                buff = copy.copy(self.buffer)
             if episode_step == 0:
                 buff = deque(self.buff_init * self.buff_len, maxlen=self.buff_len)
             buff.append(np.array([np.concatenate([obs, action])]).flatten())

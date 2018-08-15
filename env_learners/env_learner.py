@@ -29,7 +29,7 @@ class EnvLearner:
             data = data[batch_size:]
         return batches
 
-    def __prep_data__(self, data, batch_size=1):
+    def __prep_data__(self, data, batch_size=32):
         G = []
         X = []
         A = []

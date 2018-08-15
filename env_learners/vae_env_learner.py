@@ -255,7 +255,7 @@ class VAEEnvLearner(EnvLearner):
             self.sess.run(tf.global_variables_initializer())
 
     def train_epoch(self, data):
-        G, yS, yR, yD, X, S, A = self.__prep_data__(data)
+        G, yS, yR, yD, X, S, A = self.__prep_data__(data, batch_size=32)
         Loss = 0.0
         for i in range(len(X)):
             loss, _ = self.sess.run([self.loss_next, self.train_step],
@@ -292,7 +292,7 @@ class VAEEnvLearner(EnvLearner):
                 (loss, _,_) = self.get_loss(valid)
                 print('Epoch: ' + str(i) + '/' + str(total_steps))
                 print('Train Loss: ' + str(loss))
-                print()
+                print('')
                 if saver is not None and save_str is not None:
                     save_path = saver.save(self.sess, 'models/' + str(save_str) + '.ckpt')
                     print("Model saved in path: %s" % save_path)
@@ -304,12 +304,12 @@ class VAEEnvLearner(EnvLearner):
             if i % log_interval != 0 and i > 0:
                 print('Epoch: ' + str(i) + '/' + str(total_steps) + ' in ' + str(duration) + 's')
                 print('Valid Loss: ' + str(loss))
-                print()
+                print('')
         if valid is not None:
                 (loss, _,_) = self.get_loss(valid)
                 print('Final Epoch')
                 print('Valid Loss:' + str(loss))
-                print()
+                print('')
         if saver is not None and save_str is not None:
             save_path = saver.save(self.sess, 'models/' + str(save_str) + '.ckpt')
             print("Final Model saved in path: %s" % save_path)
@@ -327,6 +327,7 @@ class VAEEnvLearner(EnvLearner):
         return Loss / len(X), 0,0
 
     def step(self, obs_in, action_in, episode_step, save=True, buff=None):
+        import copy
         obs = obs_in/self.state_mul_const
         action = action_in/self.act_mul_const
         if save:
@@ -335,7 +336,7 @@ class VAEEnvLearner(EnvLearner):
             self.buffer.append(np.array([np.concatenate([obs, action])]).flatten())
         else:
             if buff is None:
-                buff = self.buffer.copy()
+                buff = copy.copy(self.buffer)
             if episode_step == 0:
                 buff = deque(self.buff_init * self.buff_len, maxlen=self.buff_len)
             buff.append(np.array([np.concatenate([obs, action])]).flatten())

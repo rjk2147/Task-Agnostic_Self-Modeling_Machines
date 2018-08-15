@@ -77,6 +77,10 @@ def run(**kwargs):
         print('Random Search architecture chosen')
         from env_learners.rand_env_learner import RandEnvLearner
         env_learner = RandEnvLearner(env)
+    elif kwargs['arch'] == 'dnn':
+        print('Traditional Deep Neural Network architecture chosen')
+        from env_learners.dnn_env_learner import DNNEnvLearner
+        env_learner = DNNEnvLearner(env)
     else:
         print('No valid architecture chosen')
         print('Defaulting to \'gan\'')
@@ -93,13 +97,13 @@ def run(**kwargs):
 def parse_args():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--env', type=str, default='widowx_arm')
-    parser.add_argument('--arch', type=str, default='gan')
+    parser.add_argument('--arch', type=str, default='dnn')
     parser.add_argument('--loop', type=str, default='open')
     parser.add_argument('--nb-epochs', type=int, default=100)
-    parser.add_argument('--nb-train-episodes', type=int, default=1000)
+    parser.add_argument('--nb-train-episodes', type=int, default=0)
     parser.add_argument('--nb-test-episodes', type=int, default=100)
     parser.add_argument('--show-model', dest='show_model', action='store_true')
-    parser.add_argument('--load', type=str, default=None)
+    parser.add_argument('--load', type=str, default='models/2018-08-13-02:18:59.ckpt')
     parser.set_defaults(show_model=False)
     args = parser.parse_args()
     dict_args = vars(args)

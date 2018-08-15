@@ -9,7 +9,7 @@ from matplotlib import pyplot as plt
 import pickle
 
 
-def run_tests(test_episodes, env, data_log, env_learner, max_action, loop):
+def run_tests(test_episodes, env, data_log, env_learner, max_action, loop, verbose=True):
     episode_step = 0
     # last_d = env.d
     # d = last_d
@@ -18,6 +18,13 @@ def run_tests(test_episodes, env, data_log, env_learner, max_action, loop):
     all_final_lens = []
     all_final_real_ds = []
     all_final_pred_ds = []
+
+    fail_final_drifts = []
+    fail_final_lens = []
+    fail_final_real_ds = []
+    fail_final_pred_ds = []
+
+
     test = []
     failures = 0
     for i in range(test_episodes):
@@ -79,10 +86,10 @@ def run_tests(test_episodes, env, data_log, env_learner, max_action, loop):
 
             if done:
                 data_log.write('Episode: ' + str(episode_step) + ' done\n\n')
-
-                print('Episode: ' + str(i) + ' in ' + str(time.time() - start_time) + ' seconds')
-                print(str(episode_step) + '\nPred D: ' + str(d) + '\nReal D: ' + str(real_d))
-                print('Drift: ' + str(drift))
+                if verbose:
+                    print('Episode: ' + str(i) + ' in ' + str(time.time() - start_time) + ' seconds')
+                    print(str(episode_step) + '\nPred D: ' + str(d) + '\nReal D: ' + str(real_d))
+                    print('Drift: ' + str(drift))
                 if d < 0.01:
                     all_final_drifts.append(drift)
                     all_final_lens.append(episode_step)
@@ -90,9 +97,16 @@ def run_tests(test_episodes, env, data_log, env_learner, max_action, loop):
                     all_final_real_ds.append(real_d)
                 else:
                     failures += 1
+                    fail_final_drifts.append(drift)
+                    fail_final_lens.append(episode_step)
+                    fail_final_pred_ds.append(d)
+                    fail_final_real_ds.append(real_d)
 
                 episode_step = 0
-    return failures, all_final_drifts, all_final_lens, all_final_pred_ds, all_final_real_ds
+    if len(all_final_drifts) > 10:
+        return failures, all_final_drifts, all_final_lens, all_final_pred_ds, all_final_real_ds
+    else:
+        return failures, fail_final_drifts, fail_final_lens, fail_final_pred_ds, fail_final_real_ds
 
 def find_next_move_train(env, env_learner, obs, max_action, episode_step, dof, bottom=-1, top=1):
     # return find_next_move(env, env_learner, obs, max_action, episode_step, dof, bottom=bottom, top=top, is_test=False)
@@ -106,6 +120,7 @@ def evaluate(action, env_learner, obs, max_action, env, episode_step, test=True)
     if not test: new_obs = env.step(max_action * action, save=False)[0]
     else: new_obs = env_learner.step(obs, max_action * action, episode_step, save=False)
     d = np.linalg.norm(env.target - new_obs[-3:])
+    #if new_obs[-1] < 0.04: d -= 10000
     return -d
 
 # taken from wikipedia
@@ -138,55 +153,10 @@ def hill_climb(act_dim, env, env_learner, obs, max_action, episode_step, is_test
                 step_size[i] = step_size[i] / acc
             else:
                 current_point[i] = current_point[i] + step_size[i] * candidate[best]
-                # current_point[i] = max(current_point[i], -1)
-                # current_point[i] = min(current_point[i], 1)
                 step_size[i] = step_size[i] * candidate[best] # accelerate
         if (evaluate(current_point, env_learner, obs, max_action, env, episode_step, test=is_test) - before) < epsilon:
             return current_point
 
-def find_next_move(env, env_learner, obs, max_action, episode_step, dof, bottom=-1, top=1, is_test=False):
-    min_act = np.zeros(env.action_space.shape[0])
-    min_obs = env.step(max_action*min_act, save=False)[0]
-    search_prec = 5
-    max_depth = 10
-    min_d = np.linalg.norm(env.target - min_obs[-3:])
-
-    new_top = np.ones(min_act.size)*top
-    new_bottom = np.ones(min_act.size)*bottom
-
-    # Time Complexity = search_prec^(dof)
-    # Assumes convexity in the action space, may not always be true
-
-    # for i in range(search_prec+1):
-    action = np.zeros(env.action_space.shape[0])
-    min_act, min_d = __rec_next_move__(action, 0, search_prec, new_top, new_bottom, env, env_learner, max_action, dof, min_d, obs, episode_step, test=is_test)
-    for i in range(max_depth): # max_depth search
-        first_act = np.zeros(min_act.size)+min_act
-        inc = ((new_top - new_bottom) / search_prec)
-        new_top = np.minimum(np.ones(min_act.size)*first_act + inc, new_top)
-        new_bottom = np.maximum(np.ones(min_act.size)*first_act - inc, new_bottom)
-        action = np.zeros(env.action_space.shape[0])
-        min_act, min_d = __rec_next_move__(action, 0, search_prec, new_top, new_bottom, env, env_learner, max_action, dof, min_d, obs, episode_step, test=is_test)
-    return min_act
-
-def __rec_next_move__(action, depth, search_prec, new_top, new_bottom, env, env_learner, max_action, dof, min_d, obs, episode_step, test):
-    if depth == action.size:
-        if not test: new_obs = env.step(max_action * action, save=False)[0]
-        else: new_obs = env_learner.step(obs, max_action * action, episode_step, save=False)
-        d = np.linalg.norm(env.target - new_obs[-3:])
-        return action, d
-    tmp_min_d = 1000000
-    min_act = np.zeros(action.size)
-    for i in range(search_prec + 1):
-        action[depth] = new_bottom[depth] + i * ((new_top[depth] - new_bottom[depth]) / search_prec)
-        action, new_min_d = __rec_next_move__(action, depth + 1, search_prec, new_top, new_bottom, env, env_learner, max_action, dof, min_d,
-                          obs, episode_step, test)
-        if new_min_d < tmp_min_d:
-            min_act = action.copy()
-            tmp_min_d = new_min_d
-    # if depth == action.size-1:
-    return min_act, tmp_min_d
-    # else: return __rec_next_move__(action, depth+1, search_prec, new_top, new_bottom, env, env_learner, max_action, dof, min_d, obs, episode_step, test)
 
 def test(env, env_learner, epochs=100, train_episodes=10, test_episodes=100, loop='open', show_model=False, load=None):
     assert (np.abs(env.action_space.low) == env.action_space.high).all()  # we assume symmetric actions.
@@ -233,30 +203,41 @@ def test(env, env_learner, epochs=100, train_episodes=10, test_episodes=100, loo
 
         # generic data gathering
 
-        if load is None:
-            env_learner.initialize(sess)
-            # Encoding for python2 compatability as the ros data was in python2
-            # TODO migrate ROS interface to python3
-            # train = pickle.load(open('widowx_train_1M.pkl', 'rb+'), encoding='latin1')
-            # train = pickle.load(open('widowx_train_1M.pkl', 'rb+'), encoding='latin1')
+        if load is None or train_episodes > 0:
+            print('Loading Data...')
+            if load is None:
+                env_learner.initialize(sess)
 
             # data_files = ['widowx_train_100K_1e-2.pkl',
             #               'widowx_train_100K_5e-2.pkl',
             #               'widowx_train_100K_1e-1.pkl',
             #               'widowx_train_100K_5e-1.pkl',
-            #               'widowx_train_100K.pkl']
-            data_files = ['widowx_train_100K.pkl']
+            #               'widowx_train_10hz_100K.pkl']
+            # data_files = ['widowx_train_10hz_100K.pkl']
+            data_files = ['widowx_train_10hz_100K_deformed.pkl']
+            env.max_iter = 100
+            # data_files = ['widowx_train_20hz_100K.pkl']
+            # env.max_iter = 200
+            # data_files = ['widowx_train_50hz_100K.pkl']
+            # env.max_iter = 500
+            # data_files = ['widowx_train_100hz_100K.pkl']
+            # env.max_iter = 1000
             for data_file in data_files:
-                train = pickle.load(open(data_file, 'rb+'))
-                if test_episodes < 1000:
-                    train = train[:(train_episodes*100)]
+                train_data = pickle.load(open(data_file, 'rb+'))
+                train = train_data[:(train_episodes*100)]
                 # Training self model
-                print('Training on '+str(len(train))+' data points')
-                env_learner.train(train, epochs, valid, saver=saver, save_str=datetime_str)
+                print('Training on ' + str(len(train)) + ' data points')
+                env_learner.train(train, epochs, valid, saver=saver, save_str=datetime_str, verbose=True)
                 print('Trained Self Model on data: '+str(data_file))
+                # for i in range(len(train_data)/10,len(train_data),len(train_data)/10):
+                #     train = train_data[i-len(train_data)/10:i]
+                #     print('Training on ' + str(len(train)) + ' data points')
+                #     env_learner.train(train, epochs, valid, saver=saver, save_str=datetime_str)
+                #     print('Trained Self Model on data: '+str(data_file))
 
         # Testing in this env
-        failures, all_final_drifts, all_final_lens, all_final_pred_ds, all_final_real_ds = run_tests(test_episodes, env, data_log, env_learner, max_action, loop)
+        print('Testing...')
+        failures, all_final_drifts, all_final_lens, all_final_pred_ds, all_final_real_ds = run_tests(test_episodes, env, data_log, env_learner, max_action, loop, verbose=True)
 
         import statistics
         num_bins = 10

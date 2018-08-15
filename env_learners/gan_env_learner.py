@@ -82,7 +82,7 @@ class GANEnvLearner(EnvLearner):
         var_d = tf.trainable_variables('discriminator')
         var_g = tf.trainable_variables('generator')
         self.g_lambda = 1.0
-        self.p_lambda = 10.0
+        self.p_lambda = 0.0
         self.t_lambda = 0.0
 
         """ Vanilla GAN """
