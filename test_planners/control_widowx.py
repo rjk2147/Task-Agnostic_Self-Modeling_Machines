@@ -12,11 +12,7 @@ from moveit_msgs.msg._RobotTrajectory import RobotTrajectory
 from moveit_msgs.srv import GetPositionFK, GetStateValidity, GetStateValidityRequest, GetStateValidityResponse
 from trajectory_msgs.msg._JointTrajectoryPoint import JointTrajectoryPoint
 from std_msgs.msg import Header
-
 from math import sin, cos, pi
-
-# Has to be run in python2 for ROS compatability
-# TODO migrate ROS interface to python3
 
 def clip_joints(val):
     bounds = [2.617, 1.571, 1.571, 1.745]
@@ -123,33 +119,6 @@ def calc_deformed_end_effector_pos(angles):
 
     # End Effector Position
     return obj[3][:3]
-
-# moveit_commander.roscpp_initialize(sys.argv)
-# rospy.init_node('move_group_python_interface_tutorial',
-#                 anonymous=True)
-# robot = moveit_commander.RobotCommander()
-# scene = moveit_commander.PlanningSceneInterface()
-# group = moveit_commander.MoveGroupCommander("widowx_arm")
-# rospy.wait_for_service('compute_fk')
-# try:
-#   moveit_fk = rospy.ServiceProxy('compute_fk', GetPositionFK)
-# except rospy.ServiceException as e:
-#   rospy.logerror("Service call failed: %s"%e)
-# # header = Header(0,rospy.Time.now(),"/world")
-# rs = RobotState()
-# joint_names = ['joint_1','joint_2','joint_3','joint_4','joint_5']
-# rs.joint_state.name = joint_names
-#
-# angles = np.array([0,0,0,0])
-# angles = np.radians(angles)
-#
-#
-
-# a = calc_deformed_end_effector_pos(np.array([0,0,0,0]))
-# print(a)
-
-# print('')
-# print(a)
 if __name__ == '__main__':
     print("============ Starting setup")
     moveit_commander.roscpp_initialize(sys.argv)
@@ -183,19 +152,18 @@ if __name__ == '__main__':
 
 
     # Training data generation
+    nb_episodes = 1000
     episode_len = 100
-    nb_episodes = 100000/episode_len
-    #nb_episodes = 500
 
     # Data generation params
-    max_action = 100*(math.pi/16.0)/episode_len
+    max_action = nb_episodes*(math.pi/16.0)/1000
 
 
     # Reset State
     train = []
     for n in range(nb_episodes):
         # First random angle loop double checking no self-collision
-        collision = False
+        collision = True
         angles = np.array(group.get_random_joint_values())
         while collision:
             angles = np.array(group.get_random_joint_values())
@@ -208,8 +176,10 @@ if __name__ == '__main__':
         rs.joint_state.position = angles
         # end_effector = moveit_fk(header, ['wrist_2_link'], rs).pose_stamped[0].pose
         # position = np.array([end_effector.position.x, end_effector.position.y, end_effector.position.z])
+
         # position = get_end_effector_pos(moveit_fk, rs)
         position = calc_end_effector_pos(angles)
+
         state = np.concatenate([angles, position], axis=0)
         for episode_step in range(episode_len): # Make 100000 for real training data
             # New Joint State
@@ -221,14 +191,12 @@ if __name__ == '__main__':
             gsvr.robot_state = rs
             # end_effector = moveit_fk(header, ['wrist_2_link'], rs).pose_stamped[0].pose
             collision = not stateValidator.call(gsvr).valid
-            collision = False
 
             # Only updating if there is no collision and thus valid
             new_state = np.zeros_like(state)+state
             if not collision:
                 # position = get_end_effector_pos(moveit_fk, rs)
-                position = calc_end_effector_pos(angles)
-                # test_pos = calc_end_effector_pos(np.concatenate([test_angle, np.array([0])]))
+                position = calc_end_effector_pos(test_angle)
 
                 # position = np.array([end_effector.position.x, end_effector.position.y, end_effector.position.z])
                 # orientation = np.array([end_effector.orientation.w, end_effector.orientation.x, end_effector.orientation.y,

@@ -42,7 +42,7 @@ if __name__ == '__main__':
     ]
     reset_target = np.array([0.171, 0.163, 0.18])
     # load = 'models/2018-08-05-12:11:16.ckpt' # 100K DNN Seq (5)
-    load = 'models/2018-08-05-18:10:52.ckpt' # 10K DNN Seq (5)
+    load = 'models/2018-08-14-22:53:53.ckpt' # 10K DNN Seq (5)
     # load = 'models/2018-08-12-22:36:23.ckpt' # 10K DNN Seq (5) Deformed
     env = WidowxROS()
     max_action = env.action_space.high
@@ -79,7 +79,7 @@ if __name__ == '__main__':
             done = False
             episode_step = 0
             while not done:
-                # print(episode_step)
+                print(episode_step)
                 if loop == 'real':
                     action = find_next_move_train(env, env_learner, obs, max_action, episode_step, dof=4)
                 else:
@@ -88,9 +88,9 @@ if __name__ == '__main__':
                 real_obs, r, real_done, _ = env.step(max_action * action)
                 path.append(new_obs)
                 d = np.linalg.norm(env.target - new_obs[-3:])
-                # print(d)
-                # print(new_obs[-3:])
-                # print('')
+                print(d)
+                print(new_obs[-3:])
+                print('')
                 real_d = np.linalg.norm(env.target - real_obs[-3:])
                 if d < 0.01:
                     done = True

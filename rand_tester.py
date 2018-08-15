@@ -7,7 +7,7 @@ from env_learners.dnn_env_learner import DNNEnvLearner
 
 # load = 'models/2018-08-05-12:11:16.ckpt' # 100K DNN Seq (5)
 # load = 'models/2018-08-05-18:10:52.ckpt' # 10K DNN Seq (5)
-load = 'models/2018-08-14-20:13:51.ckpt' # 10K DNN Seq (5) Deformed
+load = 'models/2018-08-14-22:53:53.ckpt' # 10K DNN Seq (5) Deformed
 
 env = widowx_arm.WidowxROS()
 max_action = env.action_space.high
