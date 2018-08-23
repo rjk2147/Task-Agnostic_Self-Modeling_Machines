@@ -108,9 +108,10 @@ def calc_deformed_end_effector_pos(angles):
     # print(obj[3][:3])
     # Forearm FK
     obj = rotate([0, -pi/2-angles[2], 0], obj)
-    obj = translate([0, 0, 0.073], obj)
+    obj = translate([0, 0, 0.06], obj)
     obj = rotate([0, -pi/6, 0], obj)
-    obj = translate([0, 0, 0.074], obj)
+    obj = translate([0, 0, 0.075], obj)
+    obj = translate([0, 0, 0.06], obj)
     # print(obj[3][:3])
 
     # Wrist FK

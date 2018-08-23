@@ -7,43 +7,43 @@ import tensorflow as tf
 import math
 
 if __name__ == '__main__':
-    loop = 'closed'
+    loop = 'open'
     reset_target = np.array([0.171, 0.163, 0.225])
     targets = [
-        np.array([0.075, 0.25, 0.1]),
-        np.array([0.075, 0.25, 0.045]),
+        np.array([0.075, 0.25, 0.15]),
+        np.array([0.075, 0.25, 0.06]),
         reset_target,
-        np.array([0.025, 0.25, 0.1]),
-        np.array([0.025, 0.25, 0.045]),
+        np.array([0.025, 0.25, 0.15]),
+        np.array([0.025, 0.25, 0.05]),
         reset_target,
-        np.array([-0.025, 0.25, 0.1]),
-        np.array([-0.025, 0.25, 0.045]),
-        reset_target,
-
-        np.array([0.075, 0.20, 0.1]),
-        np.array([0.075, 0.20, 0.045]),
-        reset_target,
-        np.array([0.025, 0.20, 0.1]),
-        np.array([0.025, 0.20, 0.045]),
-        reset_target,
-        np.array([-0.025, 0.20, 0.1]),
-        np.array([-0.025, 0.20, 0.045]),
+        np.array([-0.025, 0.25, 0.15]),
+        np.array([-0.025, 0.25, 0.05]),
         reset_target,
 
-        np.array([0.075, 0.15, 0.1]),
-        np.array([0.075, 0.15, 0.045]),
+        np.array([0.075, 0.20, 0.15]),
+        np.array([0.075, 0.20, 0.05]),
         reset_target,
-        np.array([0.025, 0.15, 0.1]),
-        np.array([0.025, 0.15, 0.045]),
+        np.array([0.025, 0.20, 0.15]),
+        np.array([0.025, 0.20, 0.05]),
         reset_target,
-        np.array([-0.025, 0.15, 0.1]),
-        np.array([-0.025, 0.15, 0.045]),
+        np.array([-0.025, 0.20, 0.15]),
+        np.array([-0.025, 0.20, 0.05]),
+        reset_target,
+
+        np.array([0.075, 0.15, 0.15]),
+        np.array([0.075, 0.15, 0.05]),
+        reset_target,
+        np.array([0.025, 0.15, 0.15]),
+        np.array([0.025, 0.15, 0.05]),
+        reset_target,
+        np.array([-0.025, 0.15, 0.15]),
+        np.array([-0.025, 0.15, 0.05]),
         reset_target,
     ]
     reset_target = np.array([0.171, 0.163, 0.18])
     # load = 'models/2018-08-05-12:11:16.ckpt' # 100K DNN Seq (5)
-    load = 'models/2018-08-14-22:53:53.ckpt' # 10K DNN Seq (5)
-    # load = 'models/2018-08-12-22:36:23.ckpt' # 10K DNN Seq (5) Deformed
+    # load = 'models/2018-08-15-19:24:23.ckpt' # 10K DNN Seq (5) Deformed Adaptation
+    load = 'models/2018-08-18-07:31:09.ckpt' # 100K DNN Seq (5) Real
     env = WidowxROS()
     max_action = env.action_space.high
     env_learner = DNNEnvLearner(env)
@@ -79,18 +79,21 @@ if __name__ == '__main__':
             done = False
             episode_step = 0
             while not done:
-                print(episode_step)
+                # print(episode_step)
                 if loop == 'real':
                     action = find_next_move_train(env, env_learner, obs, max_action, episode_step, dof=4)
+                    real_obs, r, real_done, _ = env.step(max_action * action)
+                    new_obs = real_obs
                 else:
                     action = find_next_move_test(env, env_learner, obs, max_action, episode_step, dof=4)
-                new_obs = env_learner.step(obs, max_action * action, episode_step, save=True)
-                real_obs, r, real_done, _ = env.step(max_action * action)
-                path.append(new_obs)
+                    new_obs = env_learner.step(obs, max_action * action, episode_step, save=True)
+                    real_obs, r, real_done, _ = env.step(max_action * action)
+                path.append(real_obs)
                 d = np.linalg.norm(env.target - new_obs[-3:])
-                print(d)
-                print(new_obs[-3:])
-                print('')
+                # print(d)
+                # print(action)
+                # print(new_obs[-3:])
+                # print('')
                 real_d = np.linalg.norm(env.target - real_obs[-3:])
                 if d < 0.01:
                     done = True
@@ -101,11 +104,13 @@ if __name__ == '__main__':
                 elif loop == 'real':
                     obs = real_obs
                 episode_step += 1
+            print(real_obs[-3:])
             print('Dist From Target: '+str(real_d))
-            paths.extend(path)
-    # print(len(paths))
-    # assert len(paths) == len(targets)
-    # pickle.dump(paths, open('pred_pick_and_place_'+loop+'_'+str(len(targets)/3)+'.pkl','wb+'))
+            print('')
+            paths.append(path)
+    print(len(paths))
+    assert len(paths) == len(targets)
+    pickle.dump(paths, open('real_pick_and_place_'+loop+'_'+str(len(targets)/3)+'.pkl','wb+'))
 
     # angles = [np.array([math.pi/2,0.0,0.0,0.0,0.0])]
     # for state in paths:

@@ -103,7 +103,7 @@ def parse_args():
     parser.add_argument('--nb-train-episodes', type=int, default=0)
     parser.add_argument('--nb-test-episodes', type=int, default=100)
     parser.add_argument('--show-model', dest='show_model', action='store_true')
-    parser.add_argument('--load', type=str, default='models/2018-08-13-02:18:59.ckpt')
+    parser.add_argument('--load', type=str, default=None)
     parser.set_defaults(show_model=False)
     args = parser.parse_args()
     dict_args = vars(args)

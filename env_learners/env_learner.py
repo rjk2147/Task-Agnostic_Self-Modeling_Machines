@@ -83,7 +83,7 @@ class EnvLearner:
                 A.append(np.concatenate(a_seq).flatten())
                 S.append(np.concatenate(y_seq).flatten())
 
-        assert len(X) == len(yS) == len(yR) == len(yD) == len(S) == len(A)
+        # assert len(X) == len(yS) == len(yR) == len(yD) == len(S) == len(A)
 
         p = np.random.permutation(len(X))
         X = np.array(X)[p]

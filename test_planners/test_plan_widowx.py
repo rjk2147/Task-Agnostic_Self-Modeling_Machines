@@ -215,29 +215,36 @@ def test(env, env_learner, epochs=100, train_episodes=10, test_episodes=100, loo
             #               'widowx_train_10hz_100K.pkl']
             # data_files = ['widowx_train_10hz_100K.pkl']
             data_files = ['widowx_train_10hz_100K_deformed.pkl']
+            # data_files = ['real_widowx_train_10hz_100K_default_processed.pkl']
             env.max_iter = 100
-            # data_files = ['widowx_train_20hz_100K.pkl']
-            # env.max_iter = 200
-            # data_files = ['widowx_train_50hz_100K.pkl']
-            # env.max_iter = 500
-            # data_files = ['widowx_train_100hz_100K.pkl']
-            # env.max_iter = 1000
             for data_file in data_files:
                 train_data = pickle.load(open(data_file, 'rb+'))
                 train = train_data[:(train_episodes*100)]
                 # Training self model
-                print('Training on ' + str(len(train)) + ' data points')
-                env_learner.train(train, epochs, valid, saver=saver, save_str=datetime_str, verbose=True)
-                print('Trained Self Model on data: '+str(data_file))
-                # for i in range(len(train_data)/10,len(train_data),len(train_data)/10):
-                #     train = train_data[i-len(train_data)/10:i]
-                #     print('Training on ' + str(len(train)) + ' data points')
-                #     env_learner.train(train, epochs, valid, saver=saver, save_str=datetime_str)
-                #     print('Trained Self Model on data: '+str(data_file))
+                # print('Training on ' + str(len(train)) + ' data points')
+                # env_learner.train(train, epochs, valid, saver=saver, save_str=datetime_str, verbose=True)
+                # print('Trained Self Model on data: '+str(data_file))
+
+                # Progressive Learning
+                for i in range(len(train)/100,len(train),len(train)/100):
+                    batch_train = train[i-len(train)/100:i]
+                    print('Training on ' + str(len(batch_train)) + ' data points')
+                    env_learner.train(batch_train, epochs, valid, saver=saver, save_str=datetime_str)
+
+                    data_log = open('logs/'+datetime_str+'_log.txt', 'w+')
+                    failures, all_final_drifts, all_final_lens, all_final_pred_ds, all_final_real_ds = \
+                        run_tests(test_episodes, env, data_log, env_learner, max_action, loop, verbose=False)
+                    print('Model '+str(i)+':')
+                    print('Percent Failed: ' + str(100.0 * float(failures) / float(test_episodes)) + '%')
+                    print('Mean Final Drift: '+str(np.mean(all_final_drifts)))
+                    print('Median Final Drift: '+str(np.median(all_final_drifts)))
+                    print('Stdev Final Drift: '+str(np.std(all_final_drifts)))
+                    print('')
+                    print('Trained Self Model on data: '+str(data_file))
 
         # Testing in this env
         print('Testing...')
-        failures, all_final_drifts, all_final_lens, all_final_pred_ds, all_final_real_ds = run_tests(test_episodes, env, data_log, env_learner, max_action, loop, verbose=True)
+        failures, all_final_drifts, all_final_lens, all_final_pred_ds, all_final_real_ds = run_tests(test_episodes, env, data_log, env_learner, max_action, loop, verbose=False)
 
         import statistics
         num_bins = 10

@@ -25,7 +25,7 @@ class DNNEnvLearner(EnvLearner):
         print('Buffer Len: ' + str(self.buff_len))
         print('Start Sequence Len: ' + str(self.seq_len))
         print('End Sequence Len: ' + str(self.max_seq_len))
-        print('gan_model:')
+        print('dnn_model:')
         print('Learning Rate: ' + str(self.lr_disc))
         print('Learning Rate: ' + str(self.lr_gen))
 

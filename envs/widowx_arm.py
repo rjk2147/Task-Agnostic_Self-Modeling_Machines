@@ -59,77 +59,116 @@ class WidowxROS(gym.Env):
 
         self.max_iter = 100
 
-    def reset(self):
+    def reset(self, target=None, position=None):
         collision = True
         self.iteration = 0
-
-        self.angles = np.array(self.group.get_random_joint_values())
-        self.angles = self.angles[:-1]
-        while collision:
+        if target is None:
             self.angles = np.array(self.group.get_random_joint_values())
             self.angles = self.angles[:-1]
+            while collision:
+                self.angles = np.array(self.group.get_random_joint_values())
+                self.angles = self.angles[:-1]
+                self.rs.joint_state.position = np.concatenate([self.angles, np.array([0])], axis=0)
+                self.gsvr.robot_state = self.rs
+                collision = not self.stateValidator.call(self.gsvr).valid
             self.rs.joint_state.position = np.concatenate([self.angles, np.array([0])], axis=0)
-            self.gsvr.robot_state = self.rs
-            collision = not self.stateValidator.call(self.gsvr).valid
-        self.rs.joint_state.position = np.concatenate([self.angles, np.array([0])], axis=0)
-        # end_effector = self.moveit_fk(self.header, ['wrist_2_link'], self.rs).pose_stamped[0].pose
+            # end_effector = self.moveit_fk(self.header, ['wrist_2_link'], self.rs).pose_stamped[0].pose
 
+            self.target = calc_end_effector_pos(self.angles)
+            # self.target = get_end_effector_pos(self.moveit_fk, self.rs)
+        else:
+            self.target = target
 
-        self.target = calc_end_effector_pos(self.angles)
-        # self.target = get_end_effector_pos(self.moveit_fk, self.rs)
-
-
-        self.angles = np.array(self.group.get_random_joint_values())
-        self.angles = self.angles[:-1]
-        while collision:
+        if position is None:
             self.angles = np.array(self.group.get_random_joint_values())
             self.angles = self.angles[:-1]
+            while collision:
+                self.angles = np.array(self.group.get_random_joint_values())
+                self.angles = self.angles[:-1]
+                self.rs.joint_state.position = np.concatenate([self.angles, np.array([0])], axis=0)
+                self.gsvr.robot_state = self.rs
+                collision = not self.stateValidator.call(self.gsvr).valid
             self.rs.joint_state.position = np.concatenate([self.angles, np.array([0])], axis=0)
-            self.gsvr.robot_state = self.rs
-            collision = not self.stateValidator.call(self.gsvr).valid
-        self.rs.joint_state.position = np.concatenate([self.angles, np.array([0])], axis=0)
-        # end_effector = self.moveit_fk(self.header, ['wrist_2_link'], self.rs).pose_stamped[0].pose
+            # end_effector = self.moveit_fk(self.header, ['wrist_2_link'], self.rs).pose_stamped[0].pose
 
-        # self.position = get_end_effector_pos(self.moveit_fk, self.rs)
+            # self.position = get_end_effector_pos(self.moveit_fk, self.rs)
+        else:
+            self.angles = position
+
         self.position = calc_end_effector_pos(self.angles)
-
         self.state = np.concatenate([self.angles, self.position], axis=0)
-
         self.d = float(np.linalg.norm(self.position - self.target))
-
 
         return self.state
 
-    def step(self, action):
-        self.iteration += 1
-        # New Joint State
-        test_angle = clip_joints(self.angles+action)
+    def step(self, action, save=True):
+        if save:
+            self.iteration += 1
+            # New Joint State
+            test_angle = clip_joints(self.angles+action)
 
-        # Using ROS to test forward kinematics and prevent collision
-        self.rs.joint_state.position = np.concatenate([test_angle, np.array([0])], axis=0)
-        self.gsvr.robot_state = self.rs
-        collision = not self.stateValidator.call(self.gsvr).valid
+            # Using ROS to test forward kinematics and prevent collision
+            self.rs.joint_state.position = np.concatenate([test_angle, np.array([0])], axis=0)
+            self.gsvr.robot_state = self.rs
+            collision = not self.stateValidator.call(self.gsvr).valid
 
-        # Only updating if there is no collision and thus valid
-        # new_state = np.zeros_like(state)+state
-        if not collision:
-            # self.position = get_end_effector_pos(self.moveit_fk, self.rs)
-            self.position = calc_end_effector_pos(self.angles)
+            # Only updating if there is no collision and thus valid
+            # new_state = np.zeros_like(state)+state
+            if not collision:
+                # self.position = get_end_effector_pos(self.moveit_fk, self.rs)
+                self.position = calc_end_effector_pos(test_angle)
 
-            # self.orientation = np.array([end_effector.orientation.w, end_effector.orientation.x, end_effector.orientation.y,
-            #                         end_effector.orientation.z])
+                # self.orientation = np.array([end_effector.orientation.w, end_effector.orientation.x, end_effector.orientation.y,
+                #                         end_effector.orientation.z])
 
-            self.angles = np.zeros_like(test_angle)+test_angle
-            self.state = np.concatenate([self.angles, self.position], axis=0)
-        # else:
-        #     print('Step '+str(episode_step)+' Collision!')
-        # angles_list.append(np.zeros_like(angles)+angles)
-        # episode.append([state, action*max_action, 0.0, new_state, (episode_step==99), episode_step])
-        self.done = (self.iteration>=99)
+                self.angles = np.zeros_like(test_angle)+test_angle
+                self.state = np.concatenate([self.angles, self.position], axis=0)
+            # else:
+            #     print('Step '+str(episode_step)+' Collision!')
+            # angles_list.append(np.zeros_like(angles)+angles)
+            # episode.append([state, action*max_action, 0.0, new_state, (episode_step==99), episode_step])
+            self.done = (self.iteration>=99)
 
-        new_d = float(np.linalg.norm(self.position - self.target))
-        if self.iteration == 1:
-            r = -new_d
+            new_d = float(np.linalg.norm(self.position - self.target))
+            if self.iteration == 1:
+                r = -new_d
+            else:
+                r = self.d - new_d
+            return self.state, r, self.done, {}
         else:
-            r = self.d - new_d
-        return self.state, r, self.done, {}
+            tmp_iteration = self.iteration + 1
+            tmp_angles = np.zeros_like(self.angles)+self.angles
+            tmp_position = np.zeros_like(self.position)+self.position
+            tmp_state = np.zeros_like(self.state)+self.state
+
+            # New Joint State
+            test_angle = clip_joints(tmp_angles+action)
+
+            # Using ROS to test forward kinematics and prevent collision
+            self.rs.joint_state.position = np.concatenate([test_angle, np.array([0])], axis=0)
+            self.gsvr.robot_state = self.rs
+            collision = not self.stateValidator.call(self.gsvr).valid
+
+            # Only updating if there is no collision and thus valid
+            # new_state = np.zeros_like(state)+state
+            if not collision:
+                # self.position = get_end_effector_pos(self.moveit_fk, self.rs)
+                tmp_position = calc_end_effector_pos(test_angle)
+
+                # self.orientation = np.array([end_effector.orientation.w, end_effector.orientation.x, end_effector.orientation.y,
+                #                         end_effector.orientation.z])
+
+                tmp_angles = np.zeros_like(test_angle)+test_angle
+                tmp_state = np.concatenate([tmp_angles, tmp_position], axis=0)
+            # else:
+            #     print('Step '+str(episode_step)+' Collision!')
+            # angles_list.append(np.zeros_like(angles)+angles)
+            # episode.append([state, action*max_action, 0.0, new_state, (episode_step==99), episode_step])
+            tmp_done = (tmp_iteration>=99)
+
+            new_d = float(np.linalg.norm(tmp_position - self.target))
+            if tmp_iteration == 1:
+                r = -new_d
+            else:
+                r = self.d - new_d
+            return tmp_state, r, tmp_done, {}
