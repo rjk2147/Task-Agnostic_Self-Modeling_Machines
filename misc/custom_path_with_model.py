@@ -10,37 +10,84 @@ if __name__ == '__main__':
     loop = 'open'
     reset_target = np.array([0.171, 0.163, 0.225])
     targets = [
-        np.array([0.075, 0.25, 0.15]),
-        np.array([0.075, 0.25, 0.06]),
-        reset_target,
-        np.array([0.025, 0.25, 0.15]),
-        np.array([0.025, 0.25, 0.05]),
-        reset_target,
-        np.array([-0.025, 0.25, 0.15]),
-        np.array([-0.025, 0.25, 0.05]),
-        reset_target,
 
-        np.array([0.075, 0.20, 0.15]),
-        np.array([0.075, 0.20, 0.05]),
-        reset_target,
-        np.array([0.025, 0.20, 0.15]),
-        np.array([0.025, 0.20, 0.05]),
-        reset_target,
-        np.array([-0.025, 0.20, 0.15]),
-        np.array([-0.025, 0.20, 0.05]),
-        reset_target,
+        # # 'H'
+        # np.array([-0.02, 0.26, 0.07]),
+        # np.array([-0.02, 0.20, 0.07]),
+        # np.array([-0.02, 0.20, 0.10]),
+        #
+        # np.array([-0.02, 0.23, 0.07]),
+        # np.array([0.0, 0.23, 0.07]),
+        # np.array([0.0, 0.23, 0.10]),
+        #
+        # np.array([0.0, 0.26, 0.07]),
+        # np.array([0.0, 0.20, 0.07]),
+        # np.array([0.0, 0.20, 0.10]),
+        #
+        # # I
+        # np.array([0.02, 0.26, 0.07]),
+        # np.array([0.02, 0.20, 0.07]),
+        # np.array([0.02, 0.20, 0.10]),
+        # np.array([0.0, 0.30478, 0.26703]),
 
-        np.array([0.075, 0.15, 0.15]),
-        np.array([0.075, 0.15, 0.05]),
-        reset_target,
-        np.array([0.025, 0.15, 0.15]),
-        np.array([0.025, 0.15, 0.05]),
-        reset_target,
-        np.array([-0.025, 0.15, 0.15]),
-        np.array([-0.025, 0.15, 0.05]),
-        reset_target,
+        # C Square
+        np.array([-0.01, 0.26, 0.10]),
+        np.array([-0.01, 0.24, 0.07]),
+        np.array([-0.04, 0.24, 0.07]),
+        # np.array([-0.02, 0.26, 0.10]),
+
+        np.array([-0.04, 0.24, 0.07]),
+        np.array([-0.04, 0.20, 0.07]),
+        # np.array([-0.02, 0.20, 0.10]),
+
+        np.array([-0.04, 0.20, 0.07]),
+        np.array([-0.01, 0.20, 0.07]),
+        np.array([-0.01, 0.20, 0.10]),
+
+        # U Square
+        np.array([0.01, 0.24, 0.07]),
+        np.array([0.01, 0.20, 0.07]),
+        # np.array([0.02, 0.20, 0.10]),
+
+        np.array([0.01, 0.20, 0.065]),
+        np.array([0.04, 0.20, 0.065]),
+        # np.array([0.04, 0.20, 0.10]),
+
+        np.array([0.04, 0.20, 0.07]),
+        np.array([0.04, 0.24, 0.07]),
+        # np.array([0.04, 0.20, 0.10]),
+
+
+        # np.array([0.075, 0.25, 0.06]),
+        # reset_target,
+        # np.array([0.025, 0.25, 0.15]),
+        # np.array([0.025, 0.25, 0.05]),
+        # reset_target,
+        # np.array([-0.025, 0.25, 0.15]),
+        # np.array([-0.025, 0.25, 0.05]),
+        # reset_target,
+        #
+        # np.array([0.075, 0.20, 0.15]),
+        # np.array([0.075, 0.20, 0.05]),
+        # reset_target,
+        # np.array([0.025, 0.20, 0.15]),
+        # np.array([0.025, 0.20, 0.05]),
+        # reset_target,
+        # np.array([-0.025, 0.20, 0.15]),
+        # np.array([-0.025, 0.20, 0.05]),
+        # reset_target,
+        #
+        # np.array([0.075, 0.15, 0.15]),
+        # np.array([0.075, 0.15, 0.05]),
+        # reset_target,
+        # np.array([0.025, 0.15, 0.15]),
+        # np.array([0.025, 0.15, 0.05]),
+        # reset_target,
+        # np.array([-0.025, 0.15, 0.15]),
+        # np.array([-0.025, 0.15, 0.05]),
+        # reset_target,
     ]
-    reset_target = np.array([0.171, 0.163, 0.18])
+    # reset_target = np.array([0.171, 0.163, 0.18])
     # load = 'models/2018-08-05-12:11:16.ckpt' # 100K DNN Seq (5)
     # load = 'models/2018-08-15-19:24:23.ckpt' # 10K DNN Seq (5) Deformed Adaptation
     load = 'models/2018-08-18-07:31:09.ckpt' # 100K DNN Seq (5) Real
@@ -110,7 +157,7 @@ if __name__ == '__main__':
             paths.append(path)
     print(len(paths))
     assert len(paths) == len(targets)
-    pickle.dump(paths, open('real_pick_and_place_'+loop+'_'+str(len(targets)/3)+'.pkl','wb+'))
+    pickle.dump(paths, open('custom_pick_and_place_'+loop+'.pkl','wb+'))
 
     # angles = [np.array([math.pi/2,0.0,0.0,0.0,0.0])]
     # for state in paths:

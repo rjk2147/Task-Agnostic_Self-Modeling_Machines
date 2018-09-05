@@ -11,7 +11,7 @@ from test_planners.test_plan_widowx import run_tests
 if __name__ == '__main__':
     train_episodes = 10
 
-    data_file = 'real_widowx_train_10hz_100K_default_processed.pkl'
+    data_file = 'data/real_widowx_train_10hz_100K_default_processed.pkl'
     train_data = pickle.load(open(data_file, 'rb+'))
     train = train_data[:(train_episodes*100)]
     env = WidowxROS()
@@ -30,7 +30,7 @@ if __name__ == '__main__':
 
     epochs = 100
     valid = None
-    nb_models = 2
+    nb_models = 4
     test_episodes = 100
     loop = 'open'
 
@@ -94,7 +94,7 @@ if __name__ == '__main__':
         print('')
 
         print('Collecting difference maximizing data...')
-        for d in range(9):
+        for d in range(99):
             new_train = []
             for n in range(10):
                 obs = env.reset()

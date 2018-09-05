@@ -157,6 +157,9 @@ def hill_climb(act_dim, env, env_learner, obs, max_action, episode_step, is_test
         if (evaluate(current_point, env_learner, obs, max_action, env, episode_step, test=is_test) - before) < epsilon:
             return current_point
 
+def a_star(act_dim, env, env_learner, obs, max_action, episode_step, is_test):
+    closedSet = {}
+    openSet = {obs}
 
 def test(env, env_learner, epochs=100, train_episodes=10, test_episodes=100, loop='open', show_model=False, load=None):
     assert (np.abs(env.action_space.low) == env.action_space.high).all()  # we assume symmetric actions.
@@ -244,7 +247,7 @@ def test(env, env_learner, epochs=100, train_episodes=10, test_episodes=100, loo
 
         # Testing in this env
         print('Testing...')
-        failures, all_final_drifts, all_final_lens, all_final_pred_ds, all_final_real_ds = run_tests(test_episodes, env, data_log, env_learner, max_action, loop, verbose=False)
+        failures, all_final_drifts, all_final_lens, all_final_pred_ds, all_final_real_ds = run_tests(test_episodes, env, data_log, env_learner, max_action, loop, verbose=True)
 
         import statistics
         num_bins = 10
