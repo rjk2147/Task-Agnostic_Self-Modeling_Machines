@@ -61,12 +61,12 @@ def rotate(theta, obj):
     return np.dot(R, obj)
 
 def calc_end_effector_pos(angles):
-    # return calc_default_end_effector_pos(angles)
-    return calc_deformed_end_effector_pos(angles)
+    return calc_default_end_effector_pos(angles)
+    # return calc_deformed_end_effector_pos(angles)
 
 def calc_wrist_pos(angles):
-    # return calc_default_end_effector_pos(angles)
-    return calc_deformed_wrist_pos(angles)
+    return calc_default_end_effector_pos(angles)
+    # return calc_deformed_wrist_pos(angles)
 
 def calc_default_end_effector_pos(angles):
     obj = np.array([[1, 0, 0, 0],

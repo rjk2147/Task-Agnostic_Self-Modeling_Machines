@@ -11,8 +11,6 @@ import pickle
 
 def run_tests(test_episodes, env, data_log, env_learner, max_action, loop, verbose=True):
     episode_step = 0
-    # last_d = env.d
-    # d = last_d
     acts = []
     all_final_drifts = []
     all_final_lens = []
@@ -50,7 +48,7 @@ def run_tests(test_episodes, env, data_log, env_learner, max_action, loop, verbo
         drifts.append(0)
 
         while not done:
-            action = find_next_move_test(env, env_learner, obs, max_action, episode_step, dof=4)
+            action = find_next_move_test(env, env_learner, obs, max_action, episode_step)
             new_obs = env_learner.step(obs, max_action * action, episode_step, save=True)
             real_obs, r, real_done, _ = env.step(max_action * action)
 
@@ -108,19 +106,16 @@ def run_tests(test_episodes, env, data_log, env_learner, max_action, loop, verbo
     else:
         return failures, fail_final_drifts, fail_final_lens, fail_final_pred_ds, fail_final_real_ds
 
-def find_next_move_train(env, env_learner, obs, max_action, episode_step, dof, bottom=-1, top=1):
-    # return find_next_move(env, env_learner, obs, max_action, episode_step, dof, bottom=bottom, top=top, is_test=False)
+def find_next_move_train(env, env_learner, obs, max_action, episode_step):
     return hill_climb(env.action_space.shape[0], env, env_learner, obs, max_action, episode_step, is_test=False, rand=False)
 
-def find_next_move_test(env, env_learner, obs, max_action, episode_step, dof, bottom=-1, top=1):
-    # return find_next_move(env, env_learner, obs, max_action, episode_step, dof, bottom=bottom, top=top, is_test=True)
+def find_next_move_test(env, env_learner, obs, max_action, episode_step):
     return hill_climb(env.action_space.shape[0], env, env_learner, obs, max_action, episode_step, is_test=True, rand=False)
 
 def evaluate(action, env_learner, obs, max_action, env, episode_step, test=True):
     if not test: new_obs = env.step(max_action * action, save=False)[0]
     else: new_obs = env_learner.step(obs, max_action * action, episode_step, save=False)
     d = np.linalg.norm(env.target - new_obs[-3:])
-    #if new_obs[-1] < 0.04: d -= 10000
     return -d
 
 # taken from wikipedia
@@ -157,11 +152,7 @@ def hill_climb(act_dim, env, env_learner, obs, max_action, episode_step, is_test
         if (evaluate(current_point, env_learner, obs, max_action, env, episode_step, test=is_test) - before) < epsilon:
             return current_point
 
-def a_star(act_dim, env, env_learner, obs, max_action, episode_step, is_test):
-    closedSet = {}
-    openSet = {obs}
-
-def test(env, env_learner, epochs=100, train_episodes=10, test_episodes=100, loop='open', show_model=False, load=None):
+def test(env, env_learner, epochs=100, train_episodes=100, test_episodes=100, loop='open', load=None):
     assert (np.abs(env.action_space.low) == env.action_space.high).all()  # we assume symmetric actions.
     max_action = env.action_space.high
     print('scaling actions by {} before executing in env'.format(max_action))
@@ -173,7 +164,6 @@ def test(env, env_learner, epochs=100, train_episodes=10, test_episodes=100, loo
         saver = tf.train.Saver()
     except:
         saver=None
-    # gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.45)
     gpu_options = None
     num_cpu = 1
     if gpu_options is None:
@@ -185,12 +175,6 @@ def test(env, env_learner, epochs=100, train_episodes=10, test_episodes=100, loo
             inter_op_parallelism_threads=num_cpu,
             intra_op_parallelism_threads=num_cpu,
             gpu_options=gpu_options)
-
-    episode_duration = -1
-    nb_valid_episodes = 50
-    episode_step = 0
-    episode_reward = 0.0
-    max_ep_rew = -10000
     valid = None
 
     with tf.Session(config=tf_config) as sess:
@@ -203,54 +187,27 @@ def test(env, env_learner, epochs=100, train_episodes=10, test_episodes=100, loo
             print('Model: ' + load + ' Restored')
             env_learner.initialize(sess, load=True)
 
-
-        # generic data gathering
-
         if load is None or train_episodes > 0:
             print('Loading Data...')
             if load is None:
                 env_learner.initialize(sess)
 
-            # data_files = ['widowx_train_100K_1e-2.pkl',
-            #               'widowx_train_100K_5e-2.pkl',
-            #               'widowx_train_100K_1e-1.pkl',
-            #               'widowx_train_100K_5e-1.pkl',
-            #               'widowx_train_10hz_100K.pkl']
-            # data_files = ['widowx_train_10hz_100K.pkl']
-            data_files = ['widowx_train_10hz_100K_deformed.pkl']
-            # data_files = ['real_widowx_train_10hz_100K_default_processed.pkl']
+            # data_files = ['real_widowx_train_10hz_100K_deformed.pkl']
+            data_files = ['real_widowx_train_10hz_100K_default_processed.pkl']
             env.max_iter = 100
             for data_file in data_files:
                 train_data = pickle.load(open(data_file, 'rb+'))
                 train = train_data[:(train_episodes*100)]
                 # Training self model
-                # print('Training on ' + str(len(train)) + ' data points')
-                # env_learner.train(train, epochs, valid, saver=saver, save_str=datetime_str, verbose=True)
-                # print('Trained Self Model on data: '+str(data_file))
-
-                # Progressive Learning
-                for i in range(len(train)/100,len(train),len(train)/100):
-                    batch_train = train[i-len(train)/100:i]
-                    print('Training on ' + str(len(batch_train)) + ' data points')
-                    env_learner.train(batch_train, epochs, valid, saver=saver, save_str=datetime_str)
-
-                    data_log = open('logs/'+datetime_str+'_log.txt', 'w+')
-                    failures, all_final_drifts, all_final_lens, all_final_pred_ds, all_final_real_ds = \
-                        run_tests(test_episodes, env, data_log, env_learner, max_action, loop, verbose=False)
-                    print('Model '+str(i)+':')
-                    print('Percent Failed: ' + str(100.0 * float(failures) / float(test_episodes)) + '%')
-                    print('Mean Final Drift: '+str(np.mean(all_final_drifts)))
-                    print('Median Final Drift: '+str(np.median(all_final_drifts)))
-                    print('Stdev Final Drift: '+str(np.std(all_final_drifts)))
-                    print('')
-                    print('Trained Self Model on data: '+str(data_file))
+                print('Training on ' + str(len(train)) + ' data points')
+                env_learner.train(train, epochs, valid, saver=saver, save_str=datetime_str, verbose=True)
+                print('Trained Self Model on data: '+str(data_file))
 
         # Testing in this env
         print('Testing...')
         failures, all_final_drifts, all_final_lens, all_final_pred_ds, all_final_real_ds = run_tests(test_episodes, env, data_log, env_learner, max_action, loop, verbose=True)
 
         import statistics
-        num_bins = 10
         print('\nModel: \'models/' + str(datetime_str) + '.ckpt\'')
         print('Percent Failed: '+str(100.0*float(failures)/float(test_episodes))+'%')
 
@@ -272,24 +229,3 @@ def test(env, env_learner, epochs=100, train_episodes=10, test_episodes=100, loo
 
         print('\nCompleted In: '+str(time.time()-sess_start)+' s')
 
-        # _, _, _ = plt.hist(all_final_drifts, num_bins, facecolor='blue', alpha=0.5)
-        # plt.title('Final Drifts')
-        # # plt.savefig(datetime_str+'_final_drift')
-        # plt.clf()
-        # _, _, _ = plt.hist(all_final_lens, num_bins, facecolor='blue', alpha=0.5)
-        # plt.title('Episode Lengths')
-        # # plt.savefig(datetime_str+'_final_lens')
-        # plt.clf()
-        # _, _, _ = plt.hist(all_final_pred_ds, num_bins, facecolor='blue', alpha=0.5)
-        # plt.title('Final Predicted Distances')
-        # # plt.savefig(datetime_str+'_final_pred_ds')
-        # plt.clf()
-        # _, _, _ = plt.hist(all_final_real_ds, num_bins, facecolor='blue', alpha=0.5)
-        # plt.title('Final Real Distances')
-        # # plt.savefig(datetime_str+'_final_real_ds')
-        # plt.clf()
-
-
-
-# if __name__ == '__main__':
-#     args = parse_args()

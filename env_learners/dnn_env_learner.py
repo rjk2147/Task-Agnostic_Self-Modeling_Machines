@@ -69,17 +69,7 @@ class DNNEnvLearner(EnvLearner):
 
         self.train_step_state = tf.train.AdamOptimizer(self.lr_gen).minimize(self.loss_state)
 
-        self.p_lambda = 1.0
-        self.t_lambda = 0.0
-
-
-        """ WGAN-GP """
-        self.n_d = 1
-        self.epsilon = 0.01
-        self.gp_lambda = 10
-
-        self.loss =  self.p_lambda * self.loss_seq + \
-                         self.t_lambda * self.loss_last
+        self.loss =  self.loss_seq
         self.train_step = tf.train.AdamOptimizer(self.lr_gen, beta1=0, beta2=0.9).minimize(self.loss)
 
     def initialize(self, session, load=False):
@@ -89,14 +79,12 @@ class DNNEnvLearner(EnvLearner):
 
     def train_epoch(self, data):
         G, yS, yR, yD, X, S, A = self.__prep_data__(data, batch_size=32)
-        lGen = 0.0
-        lDisc = 0.0
         lC = 0.0
         for i in range(len(X)):
             _, ls = self.sess.run([self.train_step, self.loss], feed_dict={self.x_seq: X[i],
                                                                                       self.y_seq: S[i],
                                                                                       self.a_seq: A[i]
-                                                                                      })  # Update the generator
+                                                                                      })
             lC += ls
         return 0,0, lC / len(X)
 
@@ -116,12 +104,9 @@ class DNNEnvLearner(EnvLearner):
             if j > 0:
                 seq_idx[j] += seq_idx[j - 1]
         for i in range(total_steps):
-            # if i > 0 and i % (
-            #     total_steps / self.max_seq_len) == 0 and self.seq_len < self.max_seq_len:
             if i == seq_idx[seq_i] and self.seq_len < self.max_seq_len:
                 self.seq_len += 1
                 seq_i += 1
-                # self.init_gan_losses()
                 if verbose:
                     print('Sequence Length: ' + str(self.seq_len))
 
@@ -174,13 +159,11 @@ class DNNEnvLearner(EnvLearner):
     def get_loss(self, data):
         G, yS, yR, yD, X, S, A = self.__prep_data__(data, self.buff_len)
         lC = 0.0
-        lGen = 0.0
-        lDisc = 0.0
         for i in range(len(X)):
             ls = self.sess.run([self.loss_seq], feed_dict={self.x_seq: X[i],
-                                                                                                    self.y_seq: S[i],
-                                                                                                    self.a_seq: A[i]
-                                                                                                    })
+                                                           self.y_seq: S[i],
+                                                           self.a_seq: A[i]
+                                                           })
             lC += ls
         return 0,0, lC / len(X)
 
